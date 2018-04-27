@@ -1,0 +1,9 @@
+
+open gdb "snb" into "./snb.gdb"
+
+load nodes "forum_0_0.csv"
+columns id, title, creationDate
+into forum 
+fields terminated |
+from 1
+log "forum_0_0.csv.log"

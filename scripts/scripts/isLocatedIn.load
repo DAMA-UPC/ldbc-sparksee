@@ -1,0 +1,48 @@
+
+open gdb "snb" into "./snb.gdb"
+
+load edges "person_isLocatedIn_place_0_0.csv"
+columns id1, id2
+into isLocatedIn 
+ignore id1, id2
+where
+	tail id1=person.id
+	head id2=place.id
+fields terminated |
+from 1
+log "person_isLocatedIn_place_0_0.csv.log"
+
+load edges "organisation_isLocatedIn_place_0_0.csv"
+columns id1, id2
+into isLocatedIn 
+ignore id1, id2
+where
+	tail id1=organisation.id
+	head id2=place.id
+fields terminated |
+from 1
+log "organisation_isLocatedIn_place_0_0.csv.log"
+
+load edges "post_isLocatedIn_place_0_0.csv"
+columns id1, id2
+into isLocatedIn 
+ignore id1, id2
+where
+	tail id1=post.id
+	head id2=place.id
+fields terminated |
+from 1
+log "post_isLocatedIn_place_0_0.csv.log"
+
+load edges "comment_isLocatedIn_place_0_0.csv"
+columns id1, id2
+into isLocatedIn 
+ignore id1, id2
+where
+	tail id1=comment.id
+	head id2=place.id
+fields terminated |
+from 1
+log "comment_isLocatedIn_place_0_0.csv.log"
+
+

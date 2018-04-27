@@ -1,0 +1,13 @@
+
+open gdb "snb" into "./snb.gdb"
+
+load edges "tag_hasType_tagclass_0_0.csv"
+columns id1, id2
+into hasType 
+ignore id1, id2
+where
+	tail id1=tag.id
+	head id2=tagclass.id
+fields terminated |
+from 1
+log "tag_hasType_tagclass_0_0.csv.log"

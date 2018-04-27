@@ -1,0 +1,13 @@
+
+open gdb "snb" into "./snb.gdb"
+
+load edges "./person_email_emailaddress_0_0.csv"
+columns id1, emailaddress
+into email 
+ignore id1, emailaddress
+where
+	tail id1=person.id
+	head emailaddress=emailaddress.emailaddress
+fields terminated |
+from 1
+log "./person_email_emailaddress_0_0.csv.log"

@@ -1,0 +1,9 @@
+
+open gdb "snb" into "./snb.gdb"
+
+load nodes "./place_0_0.csv"
+columns id, name, url, type 
+into place 
+fields terminated |
+from 1
+log "./place_0_0.csv.log"

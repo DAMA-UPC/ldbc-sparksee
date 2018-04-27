@@ -1,0 +1,16 @@
+
+
+open gdb "snb" into "./snb.gdb"
+
+load edges "place_isPartOf_place_0_0.csv"
+columns id1, id2
+into isPartOf 
+ignore id1, id2
+where
+	tail id1=place.id
+	head id2=place.id
+fields terminated |
+from 1
+log "place_isPartOf_place.csv.log"
+
+

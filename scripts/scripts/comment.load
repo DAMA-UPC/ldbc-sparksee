@@ -1,0 +1,9 @@
+
+open gdb "snb" into "./snb.gdb"
+
+load nodes "comment_0_0.csv"
+columns id, creationDate, locationIP, browserUsed, content, length 
+into comment 
+fields terminated |
+from 1
+log "comment_0_0.csv.log" 

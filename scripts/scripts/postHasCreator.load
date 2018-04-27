@@ -1,0 +1,13 @@
+
+open gdb "snb" into "./snb.gdb"
+
+load edges "post_hasCreator_person_0_0.csv"
+columns id1, id2, creationDate
+into postHasCreator 
+ignore id1, id2
+where
+	tail id1=post.id
+	head id2=person.id
+fields terminated |
+from 1
+log "post_hasCreator_person.csv.log"

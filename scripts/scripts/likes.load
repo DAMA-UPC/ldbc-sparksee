@@ -1,0 +1,24 @@
+
+open gdb "snb" into "./snb.gdb"
+
+load edges "person_likes_post_0_0.csv"
+columns id1, id2, creationDate
+into likes 
+ignore id1, id2
+where
+	tail id1=person.id
+	head id2=post.id
+fields terminated |
+from 1
+log "person_likes_post_0_0.csv.log"
+
+load edges "person_likes_comment_0_0.csv"
+columns id1, id2, creationDate
+into likes 
+ignore id1, id2
+where
+	tail id1=person.id
+	head id2=comment.id
+fields terminated |
+from 1
+log "person_likes_comment_0_0.csv.log"

@@ -1,0 +1,287 @@
+#include "Database.h"
+#include "TypeCache.h"
+#include "Utils.h"
+#include <utils/Utils.h>
+#include "snbInteractive.h"
+#include <gdb/Graph.h>
+#include <gdb/Objects.h>
+#include <gdb/ObjectsIterator.h>
+#include <gdb/Session.h>
+#include <gdb/Sparksee.h>
+#include <gdb/Value.h>
+#include <stdio.h>
+#include <string>
+#include <cstring>
+#include <vector>
+#include <queue>
+#include <map>
+#include <algorithm>
+#include <boostPatch/property_tree/ptree.hpp>
+#include <boostPatch/property_tree/json_parser.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/bind.hpp>
+#include <time.h>
+
+namespace gdb = sparksee::gdb;
+namespace snb = sparksee::snb;
+namespace ptree = boost::property_tree;
+
+namespace bi {
+namespace query19 {
+
+typedef struct key_ {
+
+  key_(long long id, int count)
+    : person_id(id), interaction_count(count) {}
+
+  long long person_id;
+  int interaction_count;
+  bool operator<(const key_ &b) const {
+    if (interaction_count != b.interaction_count)
+      return sparksee::utils::descending<int>(interaction_count,b.interaction_count);
+    if (person_id != b.person_id)
+      return sparksee::utils::ascending<long long>(person_id, b.person_id);
+    return false;
+  }
+} Key;
+
+typedef struct value_{
+  value_(int count) : stranger_count(count) {}
+
+  int stranger_count;
+} Value;
+
+struct Result {
+
+  Result(long long id, int interaction_count, int stranger_count)
+    : key(id, interaction_count), value(stranger_count) {}
+
+  bool operator<(const Result& res) const {
+    return key < res.key;
+  }
+
+  Key key;
+  Value value;
+};
+
+bool compare_result(const Result &lhs, const Result &rhs) {
+  if (lhs.key.interaction_count != rhs.key.interaction_count) {
+    return sparksee::utils::descending(lhs.key.interaction_count, rhs.key.interaction_count);
+  }
+  return sparksee::utils::ascending(lhs.key.person_id, rhs.key.person_id);
+}
+
+struct compare_priority {
+  bool operator()(const Result &lhs, const Result &rhs) {
+    return lhs < rhs;
+  }
+};
+
+static ptree::ptree Project(const gdb::Graph &graph,
+                            const snb::TypeCache &cache, const Result &result) {
+  gdb::Value val;
+  ptree::ptree pt;
+
+  pt.put<long long>("Person.id", result.key.person_id);
+  pt.put<int>("strangersCount", result.value.stranger_count);
+  pt.put<int>("messageCount", result.key.interaction_count);
+
+  return pt;
+}
+
+static ptree::ptree Project(const gdb::Graph &graph,
+                            const snb::TypeCache &cache,
+                            const std::vector<Result> &results) {
+  ptree::ptree pt;
+  for (std::vector<Result>::const_iterator it = results.begin();
+       it != results.end(); ++it) {
+    pt.push_back(std::make_pair("", Project(graph, cache, *it)));
+  }
+  return pt;
+}
+
+struct PersonNumComments{
+  gdb::oid_t person_oid;
+  long long person_id;
+  long long num_comments;
+  bool operator<(PersonNumComments const & b) const {
+    if(num_comments != b.num_comments)
+      return sparksee::utils::descending(num_comments,b.num_comments);
+    return sparksee::utils::ascending(person_id,b.person_id);
+  }
+};
+
+datatypes::Buffer Execute(gdb::Session *sess, long long date, const char* tag_class1, const char* tag_class2, int limit) {
+#ifdef VERBOSE
+  printf("Bi QUERY19: %llu %s %s\n", date, tag_class1, tag_class2);
+#endif
+
+  BEGIN_EXCEPTION
+
+    boost::scoped_ptr<gdb::Graph> graph(sess->GetGraph());
+  snb::TypeCache *cache = snb::TypeCache::instance(graph.get());
+
+  BEGIN_TRANSACTION;
+
+  int o_day = sparksee::utils::day(date);
+  int o_month = sparksee::utils::month(date);
+  int o_year = sparksee::utils::year(date);
+  gdb::Value value;
+
+  long long class1_oid = graph->FindObject(cache->tagclass_name_t, value.SetString(sparksee::utils::to_wstring(tag_class1)));
+  long long class2_oid = graph->FindObject(cache->tagclass_name_t, value.SetString(sparksee::utils::to_wstring(tag_class2)));
+
+  timeval start,end;
+  gettimeofday(&start,NULL);
+
+  // get tags of the given tagclasses
+  boost::scoped_ptr<gdb::Objects> class1_tags(graph->Neighbors(class1_oid, cache->has_type_t, gdb::Ingoing));
+  boost::scoped_ptr<gdb::Objects> class2_tags(graph->Neighbors(class2_oid, cache->has_type_t, gdb::Ingoing));
+
+  // get forums tagged with tags from the two given tag classes 
+  boost::scoped_ptr<gdb::Objects> forums(graph->Select(cache->forum_t));
+  boost::scoped_ptr<gdb::Objects> forum1(graph->Neighbors(class1_tags.get(), cache->has_tag_t, gdb::Ingoing));
+  forum1->Intersection(forums.get());
+  boost::scoped_ptr<gdb::Objects> forum2(graph->Neighbors(class2_tags.get(), cache->has_tag_t, gdb::Ingoing));
+  forum2->Intersection(forums.get());
+
+  // get the members of each of the kinds of forums
+  
+  boost::scoped_ptr<gdb::Objects> forum_members1(graph->Neighbors(forum1.get(), cache->has_member_t, gdb::Outgoing));
+  boost::scoped_ptr<gdb::Objects> forum_members2(graph->Neighbors(forum2.get(), cache->has_member_t, gdb::Outgoing));
+  boost::scoped_ptr<gdb::Objects> candidate_strangers(sess->NewObjects());
+  candidate_strangers->Union(forum_members1.get());
+  candidate_strangers->Intersection(forum_members2.get());
+
+  gettimeofday(&end,NULL);
+  unsigned long executionTime = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)/1000;
+  printf("CANDIDATE STRANGERS: %lu ms\n",executionTime);
+
+  boost::scoped_ptr<gdb::Objects> candidate_strangers_messages(graph->Neighbors(candidate_strangers.get(), cache->post_has_creator_t, gdb::Ingoing));
+  candidate_strangers_messages->Union(boost::scoped_ptr<gdb::Objects>(graph->Neighbors(candidate_strangers.get(), cache->comment_has_creator_t, gdb::Ingoing)).get());
+
+  boost::scoped_ptr<gdb::Objects> persons(graph->Select(cache->person_t));
+  boost::scoped_ptr<gdb::ObjectsIterator> person_iterator(persons->Iterator());
+
+  std::vector<PersonNumComments> candidate_persons;
+  candidate_persons.reserve(persons->Count());
+  while (person_iterator->HasNext()) {
+    long long person_oid = person_iterator->Next();
+    graph->GetAttribute(person_oid, cache->person_id_t, value);
+    long long person_id = value.GetLong();
+    graph->GetAttribute(person_oid, cache->person_birthday_t, value);
+    std::string birthday = sparksee::utils::to_string(value.GetString());
+    int year = sparksee::utils::year(birthday);
+    int month = sparksee::utils::month(birthday);
+    int day = sparksee::utils::day(birthday);
+
+    // for each person born after the given date
+    if(year > o_year || ((year==o_year) && (month > o_month)) || ((year==o_year) && (month == o_month) && (day > o_day))) {
+      long num_comments = graph->Degree(person_oid, cache->comment_has_creator_t, gdb::Ingoing);
+      PersonNumComments p_num_comments;
+      p_num_comments.person_oid = person_oid;
+      p_num_comments.num_comments = num_comments;
+      p_num_comments.person_id = person_id;
+
+      candidate_persons.push_back(p_num_comments);
+    }
+  }
+
+
+  std::sort(candidate_persons.begin(), candidate_persons.end());
+  std::priority_queue<Result, std::vector<Result>, compare_priority > top_k;
+
+
+  unsigned long persons_inspected = 0;
+  for(std::vector<PersonNumComments>::iterator it = candidate_persons.begin(); it != candidate_persons.end(); ++it) {
+    long long person_oid = it->person_oid;
+
+    if(static_cast<int>(top_k.size()) == limit) {
+      const Result& current_limit = top_k.top();
+      if(current_limit.key.interaction_count > it->num_comments) {
+        break;
+      }
+    }
+
+
+    boost::scoped_ptr<gdb::Objects> friends(graph->Neighbors(person_oid, cache->knows_t, gdb::Any));
+
+    boost::scoped_ptr<gdb::Objects> replies(graph->Neighbors(person_oid, cache->comment_has_creator_t, gdb::Ingoing));
+
+    boost::scoped_ptr<gdb::Objects> found_strangers(sess->NewObjects());
+    long num_interactions = 0;
+    long num_strangers = 0;
+    boost::scoped_ptr<gdb::ObjectsIterator> iter_replies(replies->Iterator());
+    while(iter_replies->HasNext()) {
+
+      boost::scoped_ptr<gdb::Objects> found_strangers_in_path(sess->NewObjects());
+      gdb::oid_t next_reply = iter_replies->Next();
+      next_reply = boost::scoped_ptr<gdb::Objects>(graph->Neighbors(next_reply, cache->reply_of_t, gdb::Outgoing))->Any();
+      while(true) {
+        if(candidate_strangers_messages->Exists(next_reply)) {
+          gdb::oid_t creator = gdb::Objects::InvalidOID;
+
+          if(graph->GetObjectType(next_reply) == cache->post_t) {
+            boost::scoped_ptr<gdb::Objects> creators(graph->Neighbors(next_reply, cache->post_has_creator_t, gdb::Outgoing));
+            creator = creators->Any();
+          } else {
+            boost::scoped_ptr<gdb::Objects> creators(graph->Neighbors(next_reply, cache->comment_has_creator_t, gdb::Outgoing));
+            creator = creators->Any();
+          }
+
+          if(!found_strangers_in_path->Exists(creator)) {
+            found_strangers_in_path->Add(creator);
+            if(creator != person_oid && !friends->Exists(creator)) {
+              num_interactions++;
+              if(!found_strangers->Exists(creator)) {
+                found_strangers->Add(creator);
+                num_strangers++;
+              }
+            }
+          }
+        }
+
+        if(graph->Degree(next_reply, cache->reply_of_t, gdb::Outgoing) != 0) {
+          next_reply = boost::scoped_ptr<gdb::Objects>(graph->Neighbors(next_reply, cache->reply_of_t, gdb::Outgoing))->Any();
+        } else {
+          break;
+        }
+      }
+    }
+
+    Result current_result(it->person_id, num_interactions, num_strangers);
+    if(static_cast<int>(top_k.size()) == limit) {
+      const Result& current_limit = top_k.top();
+      if(current_result < current_limit) {
+        top_k.pop();
+        top_k.push(current_result);
+      } 
+    } else {
+      top_k.push(current_result);
+    }
+    persons_inspected++;
+  }
+
+
+  std::vector<Result> intermediate_result;
+  while(top_k.size() > 0) {
+    intermediate_result.push_back(top_k.top());
+    top_k.pop();
+  }
+  std::sort(intermediate_result.begin(), intermediate_result.end(),
+            compare_result);
+  sparksee::utils::top(intermediate_result, limit);
+  ptree::ptree pt = Project(*graph, *cache, intermediate_result);
+  COMMIT_TRANSACTION
+
+#ifdef VERBOSE
+    printf("STATS: %lu %lu\n", persons_inspected, candidate_persons.size());
+  printf("EXIT BI QUERY19: %llu %s %s %lu\n", date, tag_class1, tag_class2, intermediate_result.size());
+#endif
+  char* ret = snb::utils::to_json(pt);
+  return datatypes::Buffer(ret, strlen(ret));
+
+  END_EXCEPTION
+}
+}
+}

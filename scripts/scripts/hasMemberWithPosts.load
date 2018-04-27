@@ -1,0 +1,13 @@
+
+open gdb "snb" into "./snb.gdb"
+
+load edges "forum_hasMemberWithPosts_person_0_0.csv"
+columns id1, id2, joinDate
+into hasMemberWithPosts 
+ignore id1, id2
+where
+	tail id1=forum.id
+	head id2=person.id
+fields terminated |
+from 1
+log "forum_hasMemberWithPosts_person_0_0.csv.log"

@@ -1,0 +1,9 @@
+
+open gdb "snb" into "./snb.gdb"
+
+load nodes "./language_0_0.csv"
+columns language 
+into language 
+fields terminated |
+from 0
+log "./language_0_0.csv.log"

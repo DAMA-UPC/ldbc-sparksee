@@ -1,0 +1,9 @@
+
+open gdb "snb" into "./snb.gdb"
+
+load nodes "tag_0_0.csv" 
+columns id, name, url
+into tag
+fields terminated |
+from 1
+log "tag_0_0.csv.log"

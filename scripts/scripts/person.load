@@ -1,0 +1,9 @@
+
+open gdb "snb" into "./snb.gdb"
+
+load nodes "./person_0_0.csv"
+columns id, firstName, lastName, gender, birthday, creationDate, locationIP, browserUsed
+into person
+fields terminated |
+from 1
+log "person_0_0.csv.log"

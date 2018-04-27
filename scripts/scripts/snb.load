@@ -1,0 +1,524 @@
+
+create gdb "snb" into "${DATA_DIR}/snb.gdb"
+
+create node person
+create attribute person.id long unique
+create attribute person.firstName string indexed
+create attribute person.lastName string basic
+create attribute person.gender string basic
+create attribute person.birthday string basic
+create attribute person.creationDate timestamp basic
+create attribute person.locationIP string basic
+create attribute person.browserUsed string basic
+
+create node language 
+create attribute language.language string unique
+
+create node emailaddress 
+create attribute emailaddress.emailaddress string unique
+
+create node place
+create attribute place.id long unique
+create attribute place.name string indexed 
+create attribute place.url string basic
+create attribute place.type string basic
+
+create node organisation 
+create attribute organisation.id long unique
+create attribute organisation.type string basic
+create attribute organisation.name string indexed 
+create attribute organisation.url string basic
+
+create node tagclass
+create attribute tagclass.id long unique
+create attribute tagclass.name string indexed 
+create attribute tagclass.url string basic 
+
+create node tag
+create attribute tag.id long unique
+create attribute tag.name string indexed 
+create attribute tag.url string basic 
+
+create node forum
+create attribute forum.id long unique
+create attribute forum.title string basic 
+create attribute forum.creationDate timestamp basic
+
+create node post
+create attribute post.id long unique
+create attribute post.imageFile string basic
+create attribute post.creationDate timestamp indexed
+create attribute post.locationIP string basic
+create attribute post.browserUsed string basic
+create attribute post.language string basic
+create attribute post.content string basic
+create attribute post.length integer basic
+
+create node comment
+create attribute comment.id long unique
+create attribute comment.creationDate timestamp indexed
+create attribute comment.locationIP string basic
+create attribute comment.browserUsed string basic
+create attribute comment.content string basic
+create attribute comment.length integer basic
+
+create undirected edge knows materialize neighbors
+create attribute knows.creationDate timestamp basic
+
+create edge isPartOf materialize neighbors
+
+create edge isLocatedIn materialize neighbors
+
+create edge studyAt materialize neighbors
+create attribute studyAt.classYear integer basic
+
+create edge workAt materialize neighbors
+create attribute workAt.workFrom integer basic
+
+create edge hasType materialize neighbors
+
+create edge isSubclassOf materialize neighbors
+
+create edge hasInterest materialize neighbors
+
+create edge hasMember materialize neighbors
+create attribute hasMember.joinDate timestamp indexed
+
+create edge hasModerator materialize neighbors
+
+create edge hasTag materialize neighbors
+
+create edge likes materialize neighbors
+create attribute likes.creationDate timestamp indexed 
+
+create edge postHasCreator materialize neighbors
+
+create edge postHasTag materialize neighbors
+
+create edge commentHasTag materialize neighbors
+
+create edge containerOf materialize neighbors
+
+create edge commentHasCreator materialize neighbors
+
+create edge replyOf materialize neighbors
+
+create edge email materialize neighbors
+
+create edge speaks materialize neighbors
+
+
+# Loading person
+load nodes "${DATA_DIR}/person_0_0.csv"
+columns id, firstName, lastName, gender, birthday, creationDate, locationIP, browserUsed
+into person
+fields terminated |
+from 1
+log "${DATA_DIR}/person_0_0.csv.log"
+
+# Loading place
+load nodes "${DATA_DIR}/place_0_0.csv"
+columns id, name, url, type 
+into place 
+fields terminated |
+from 1
+log "${DATA_DIR}/place_0_0.csv.log"
+
+# Loading post
+load nodes "${DATA_DIR}/post_0_0.csv"
+columns id, imageFile, creationDate, locationIP, browserUsed, content, length 
+into post
+fields terminated |
+from 1
+log "${DATA_DIR}/post_0_0.csv.log"
+
+# Loading tagclass
+load nodes "${DATA_DIR}/tagclass_0_0.csv"
+columns id, name, url
+into tagclass
+fields terminated |
+from 1
+log "${DATA_DIR}/tagclass_0_0.csv.log"
+
+# Loading tag
+load nodes "${DATA_DIR}/tag_0_0.csv" 
+columns id, name, url
+into tag
+fields terminated |
+from 1
+log "${DATA_DIR}/tag_0_0.csv.log"
+
+# Loading organisation
+load nodes "${DATA_DIR}/organisation_0_0.csv"
+columns id, type, name, url
+into organisation 
+fields terminated |
+from 1
+log "${DATA_DIR}/organisation_0_0.csv.log"
+
+# Loading forums
+load nodes "${DATA_DIR}/forum_0_0.csv"
+columns id, title, creationDate
+into forum 
+fields terminated |
+from 1
+log "${DATA_DIR}/forum_0_0.csv.log"
+
+# Loading languages 
+load nodes "${DATA_DIR}/language_0_0.csv"
+columns language 
+into language 
+fields terminated |
+from 0
+log "${DATA_DIR}/language_0_0.csv.log"
+
+# Loading comments
+load nodes "${DATA_DIR}/comment_0_0.csv"
+columns id, creationDate, locationIP, browserUsed, content, length 
+into comment 
+fields terminated |
+from 1
+log "${DATA_DIR}/comment_0_0.csv.log" 
+
+# Loading comment has creator person
+load edges "${DATA_DIR}/comment_hasCreator_person_0_0.csv"
+columns id1, id2
+into commentHasCreator 
+ignore id1, id2
+where
+	tail id1=comment.id
+	head id2=person.id
+fields terminated |
+from 1
+log "${DATA_DIR}/comment_hasCreator_person.csv.log"
+
+# Loading comment has tag tag 
+load edges "${DATA_DIR}/comment_hasTag_tag_0_0.csv"
+columns id1, id2
+into commentHasTag 
+ignore id1, id2
+where
+	tail id1=comment.id
+	head id2=tag.id
+fields terminated |
+from 1
+log "${DATA_DIR}/comment_hasTag_tag.csv.log"
+
+
+# Loading forum containerOf post
+load edges "${DATA_DIR}/forum_containerOf_post_0_0.csv"
+columns id1, id2
+into containerOf 
+ignore id1, id2
+where
+	tail id1=forum.id
+	head id2=post.id
+fields terminated |
+from 1
+log "${DATA_DIR}/forum_containerOf_post.csv.log"
+
+# Loading person email emailaddress
+load nodes "${DATA_DIR}/person_email_emailaddress_0_0.csv"
+columns id, emailaddress 
+into emailaddress 
+ignore id
+fields terminated |
+from 1
+log "${DATA_DIR}/person_email_emailaddress_0_0.csv.log"
+
+load edges "${DATA_DIR}/person_email_emailaddress_0_0.csv"
+columns id1, emailaddress
+into email 
+ignore id1, emailaddress
+where
+	tail id1=person.id
+	head emailaddress=emailaddress.emailaddress
+fields terminated |
+from 1
+log "${DATA_DIR}/person_email_emailaddress_0_0.csv.log"
+
+
+# Loading person has Interest
+load edges "${DATA_DIR}/person_hasInterest_tag_0_0.csv"
+columns id1, id2
+into hasInterest 
+ignore id1, id2
+where
+	tail id1=person.id
+	head id2=tag.id
+fields terminated |
+from 1
+log "${DATA_DIR}/person_hasInterest_tag_0_0.csv.log"
+
+# Loading forum has member
+load edges "${DATA_DIR}/forum_hasMember_person_0_0.csv"
+columns id1, id2, joinDate 
+into hasMember 
+ignore id1, id2
+where
+	tail id1=forum.id
+	head id2=person.id
+fields terminated |
+from 1
+log "${DATA_DIR}/forum_hasMember_person_0_0.csv.log"
+
+
+# Loading forum has moderator person
+load edges "${DATA_DIR}/forum_hasModerator_person_0_0.csv"
+columns id1, id2
+into hasModerator 
+ignore id1, id2
+where
+	tail id1=forum.id
+	head id2=person.id
+fields terminated |
+from 1
+log "${DATA_DIR}/forum_hasModerator_person_0_0.log"
+
+
+# Loading forum has tag tag
+load edges "${DATA_DIR}/forum_hasTag_tag_0_0.csv"
+columns id1, id2
+into hasTag 
+ignore id1, id2
+where
+	tail id1=forum.id
+	head id2=tag.id
+fields terminated |
+from 1
+log "${DATA_DIR}/forum_hasTag_tag_0_0.csv.log"
+
+# Loading post has tag tag
+load edges "${DATA_DIR}/post_hasTag_tag_0_0.csv"
+columns id1, id2
+into hasTag 
+ignore id1, id2
+where
+	tail id1=post.id
+	head id2=tag.id
+fields terminated |
+from 1
+log "${DATA_DIR}/post_hasTag_tag_0_0.csv.log"
+
+# Loading comment has tag tag
+load edges "${DATA_DIR}/comment_hasTag_tag_0_0.csv"
+columns id1, id2
+into hasTag 
+ignore id1, id2
+where
+	tail id1=comment.id
+	head id2=tag.id
+fields terminated |
+from 1
+log "${DATA_DIR}/comment_hasTag_tag_0_0.csv.log"
+
+
+# Loading tag has Type tagclass
+load edges "${DATA_DIR}/tag_hasType_tagclass_0_0.csv"
+columns id1, id2
+into hasType 
+ignore id1, id2
+where
+	tail id1=tag.id
+	head id2=tagclass.id
+fields terminated |
+from 1
+log "${DATA_DIR}/tag_hasType_tagclass_0_0.csv.log"
+
+# Loading person is located in place
+load edges "${DATA_DIR}/person_isLocatedIn_place_0_0.csv"
+columns id1, id2
+into isLocatedIn 
+ignore id1, id2
+where
+	tail id1=person.id
+	head id2=place.id
+fields terminated |
+from 1
+log "${DATA_DIR}/person_isLocatedIn_place_0_0.csv.log"
+
+# Loading organisation is located in place
+load edges "${DATA_DIR}/organisation_isLocatedIn_place_0_0.csv"
+columns id1, id2
+into isLocatedIn 
+ignore id1, id2
+where
+	tail id1=organisation.id
+	head id2=place.id
+fields terminated |
+from 1
+log "${DATA_DIR}/organisation_isLocatedIn_place_0_0.csv.log"
+
+# Loading post is located in place
+load edges "${DATA_DIR}/post_isLocatedIn_place_0_0.csv"
+columns id1, id2
+into isLocatedIn 
+ignore id1, id2
+where
+	tail id1=post.id
+	head id2=place.id
+fields terminated |
+from 1
+log "${DATA_DIR}/post_isLocatedIn_place_0_0.csv.log"
+
+# Loading comment is located in place
+load edges "${DATA_DIR}/comment_isLocatedIn_place_0_0.csv"
+columns id1, id2
+into isLocatedIn 
+ignore id1, id2
+where
+	tail id1=comment.id
+	head id2=place.id
+fields terminated |
+from 1
+log "${DATA_DIR}/comment_isLocatedIn_place_0_0.csv.log"
+
+# Loading place is part of place 
+load edges "${DATA_DIR}/place_isPartOf_place_0_0.csv"
+columns id1, id2
+into isPartOf 
+ignore id1, id2
+where
+	tail id1=place.id
+	head id2=place.id
+fields terminated |
+from 1
+log "${DATA_DIR}/place_isPartOf_place.csv.log"
+
+
+# Loading tagclass is subclass of tagclass
+load edges "${DATA_DIR}/tagclass_isSubclassOf_tagclass_0_0.csv"
+columns id1, id2
+into knows 
+ignore id1, id2
+where
+	tail id1=tagclass.id
+	head id2=tagclass.id
+fields terminated |
+from 1
+log "${DATA_DIR}/tagclass_isSubclassOf_tagclass_0_0.csv.log"
+
+# Loading person knows person 
+
+load edges "${DATA_DIR}/person_knows_person_0_0.csv"
+columns id1, id2, creationDate
+into knows 
+ignore id1, id2
+where
+	tail id1=person.id
+	head id2=person.id
+fields terminated |
+from 1
+log "${DATA_DIR}/person_knows_person_0_0.csv.log"
+
+
+# Loading person likes post
+load edges "${DATA_DIR}/person_likes_post_0_0.csv"
+columns id1, id2, creationDate
+into likes 
+ignore id1, id2
+where
+	tail id1=person.id
+	head id2=post.id
+fields terminated |
+from 1
+log "${DATA_DIR}/person_likes_post_0_0.csv.log"
+
+# Loading person likes comment 
+load edges "${DATA_DIR}/person_likes_comment_0_0.csv"
+columns id1, id2, creationDate
+into likes 
+ignore id1, id2
+where
+	tail id1=person.id
+	head id2=comment.id
+fields terminated |
+from 1
+log "${DATA_DIR}/person_likes_comment_0_0.csv.log"
+
+
+# Loading post has creator person
+load edges "${DATA_DIR}/post_hasCreator_person_0_0.csv"
+columns id1, id2, creationDate
+into postHasCreator 
+ignore id1, id2
+where
+	tail id1=post.id
+	head id2=person.id
+fields terminated |
+from 1
+log "${DATA_DIR}/post_hasCreator_person.csv.log"
+
+# Loading post has tag tag
+load edges "${DATA_DIR}/post_hasTag_tag_0_0.csv"
+columns id1, id2
+into postHasTag 
+ignore id1, id2
+where
+	tail id1=post.id
+	head id2=tag.id
+fields terminated |
+from 1
+log "${DATA_DIR}/post_hasTag_tag.csv.log"
+
+
+# Loading comment replyof post
+load edges "${DATA_DIR}/comment_replyOf_post_0_0.csv"
+columns id1, id2
+into replyOf 
+ignore id1, id2
+where
+	tail id1=comment.id
+	head id2=post.id
+fields terminated |
+from 1
+log "${DATA_DIR}/comment_replyOf_post.csv.log"
+
+# Loading comment replyof comment
+load edges "${DATA_DIR}/comment_replyOf_comment_0_0.csv"
+columns id1, id2
+into replyOf 
+ignore id1, id2
+where
+	tail id1=comment.id
+	head id2=comment.id
+fields terminated |
+from 1
+log "${DATA_DIR}/comment_replyOf_comment.csv.log"
+
+# Loading person speaks language
+load edges "${DATA_DIR}/person_speaks_language_0_0.csv"
+columns id1, language 
+into speaks
+ignore id1, language 
+where
+	tail id1=person.id
+	head language=language.language
+fields terminated |
+from 1
+log "${DATA_DIR}/person_speaks_language_0_0.csv.log"
+
+# Loading person studyat organisation
+load edges "${DATA_DIR}/person_studyAt_organisation_0_0.csv"
+columns id1, id2, classYear
+into studyAt 
+ignore id1, id2
+where
+	tail id1=person.id
+	head id2=organisation.id
+fields terminated |
+from 1
+log "${DATA_DIR}/person_studyAt_organisation_0_0.csv.log"
+
+
+# Loading person workAt organisation
+load edges "${DATA_DIR}/person_workAt_organisation_0_0.csv"
+columns id1, id2, workFrom
+into workAt 
+ignore id1, id2
+where
+	tail id1=person.id
+	head id2=organisation.id
+fields terminated |
+from 1
+log "${DATA_DIR}/person_workAt_organisation_0_0.csv.log"

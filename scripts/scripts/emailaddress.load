@@ -1,0 +1,10 @@
+
+open gdb "snb" into "./snb.gdb"
+
+load nodes "./person_email_emailaddress_0_0.csv"
+columns id, emailaddress 
+into emailaddress 
+ignore id
+fields terminated |
+from 1
+log "./person_email_emailaddress_0_0.csv.log"

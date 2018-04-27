@@ -1,0 +1,110 @@
+create gdb "snb" into "./snb.gdb"
+
+create node person
+create attribute person.id long unique
+create attribute person.firstName string indexed
+create attribute person.lastName string basic
+create attribute person.gender string basic
+create attribute person.birthday string basic
+create attribute person.creationDate timestamp basic
+create attribute person.locationIP string basic
+create attribute person.browserUsed string basic
+
+create node language 
+create attribute language.language string unique
+
+create node emailaddress 
+create attribute emailaddress.emailaddress string unique
+
+create node place
+create attribute place.id long unique
+create attribute place.name string indexed 
+create attribute place.url string basic
+create attribute place.type string basic
+
+create node organisation 
+create attribute organisation.id long unique
+create attribute organisation.type string basic
+create attribute organisation.name string indexed 
+create attribute organisation.url string basic
+
+create node tagclass
+create attribute tagclass.id long unique
+create attribute tagclass.name string indexed 
+create attribute tagclass.url string basic 
+
+create node tag
+create attribute tag.id long unique
+create attribute tag.name string indexed 
+create attribute tag.url string basic 
+
+create node forum
+create attribute forum.id long unique
+create attribute forum.title string basic 
+create attribute forum.creationDate timestamp basic
+
+create node post
+create attribute post.id long unique
+create attribute post.imageFile string basic
+create attribute post.creationDate timestamp indexed
+create attribute post.locationIP string basic
+create attribute post.browserUsed string basic
+create attribute post.language string basic
+create attribute post.content string basic
+create attribute post.length integer basic
+
+create node comment
+create attribute comment.id long unique
+create attribute comment.creationDate timestamp indexed
+create attribute comment.locationIP string basic
+create attribute comment.browserUsed string basic
+create attribute comment.content string basic
+create attribute comment.length integer basic
+
+create undirected edge knows materialize neighbors
+create attribute knows.creationDate timestamp basic
+
+create edge isPartOf materialize neighbors
+
+create edge isLocatedIn materialize neighbors
+
+create edge studyAt materialize neighbors
+create attribute studyAt.classYear integer basic
+
+create edge workAt materialize neighbors
+create attribute workAt.workFrom integer basic
+
+create edge hasType materialize neighbors
+
+create edge isSubclassOf materialize neighbors
+
+create edge hasInterest materialize neighbors
+
+create edge hasMember materialize neighbors
+create attribute hasMember.joinDate timestamp indexed
+
+create edge hasMemberWithPosts materialize neighbors
+create attribute hasMemberWithPosts.joinDate timestamp indexed
+
+create edge hasModerator materialize neighbors
+
+create edge hasTag materialize neighbors
+
+create edge likes materialize neighbors
+create attribute likes.creationDate timestamp indexed 
+
+create edge postHasCreator materialize neighbors
+
+create edge postHasTag materialize neighbors
+
+create edge commentHasTag materialize neighbors
+
+create edge containerOf materialize neighbors
+
+create edge commentHasCreator materialize neighbors
+
+create edge replyOf materialize neighbors
+
+create edge email materialize neighbors
+
+create edge speaks materialize neighbors

@@ -1,0 +1,13 @@
+
+open gdb "snb" into "./snb.gdb"
+
+load edges "person_knows_person_0_0.csv"
+columns id1, id2, creationDate
+into knows 
+ignore id1, id2
+where
+	tail id1=person.id
+	head id2=person.id
+fields terminated |
+from 1
+log "person_knows_person_0_0.csv.log"
