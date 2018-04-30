@@ -77,7 +77,7 @@ function synch_ldbc_driver {
 function install_ldbc_driver {
 	if [[ -z $LDBC_SPARKSEE ]]
 	then
-		print_error "Cannot install ldbc_driver, need LDBCpp first"
+		print_error "Cannot install ldbc_driver, set LDBC_SPARKSEE first"
 	else
 		print_progress "Installing LDBC Driver"
 		if [[ ! -d ldbc_driver ]]
@@ -155,20 +155,11 @@ then
 				-h|--help)
 					HELP=YES
 					;;
-				-l|--ldbc-sparksee)
-					LDBC_SPARKSEE=$2
-					;;
 			esac
 			shift
 		done
 
 		if [[ ! -z $HELP ]]
-		then
-			print_install_usage
-			exit
-		fi
-
-		if [[  -z $LDBC_SPARKSEE ]]
 		then
 			print_install_usage
 			exit
@@ -295,7 +286,6 @@ fi
 initialize_repository $REPOSITORY/$SCALEFACTOR/$TAG $SOURCE
 cp $LDBC_SPARKSEE/scripts/load_data.sh ./
 ./load_data.sh $SOURCE/social_network $NUMTHREADS $NUMPARTITIONS $LDBC_SPARKSEE
-$LDBC_SPARKSEE/build
 mv snb.gdb* $REPOSITORY/$SCALEFACTOR/$TAG
 fi
 
