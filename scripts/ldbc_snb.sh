@@ -20,8 +20,8 @@ function print_usage {
 # Prints the usage of install command
 function print_install_usage {
 	echo "ldbc_snb.sh install [options]"
-	echo "options: "
-	echo "		--sparksee <branch or tag name relative to parent> "
+	echo "		-h/--help <help info> "
+	echo "		-l/--ldbc-sparksee <The root folder of ldbc-sparksee> "
 }
 
 # Prints the usage of load command
@@ -46,33 +46,6 @@ function print_error {
 	echo "ERROR: $1!!!"
 }
 
-# Install a specific sparksee branch
-function install_sparksee {
-if [ -d sparksee ] 
-then
-	if [ ! -d $1 ]
-	then
-		mkdir sparksee
-		cd sparksee
-		print_progress "Installing Sparksee $1"
-		svn co https://circe.ac.upc.edu/dex/$1 $1
-		cd $1
-		mkdir -p build
-		mkdir -p results
-		cd $ROOT
-	fi
-	cd sparksee/$1
-	svn update
-	cd build 
-	cmake -DCMAKE_BUILD_TYPE=RELEASE -DSPARKSEE_STL=NATIVE -DSPARKSEE_HA=DISABLED ..
-	make sparksee -j16
-	cd $ROOT
-else
-	print_error "Cannot install sparksee. Run ldbc_snb.sh install first"
-	exit
-fi
-}
-
 # syncs ldbcpp with the latest version in the repository
 function synch_ldbcpp {
 	print_progress "Syncing LDBCpp"
@@ -81,44 +54,14 @@ function synch_ldbcpp {
 	cd $ROOT
 }
 
-# installs the LDBCpp benchmark project
-function install_ldbcpp {
-	if [[ -z $SPARKSEE_INCLUDE_DIR || -z $SPARKSEE_LIB_DIR ]]
-	then
-		print_progress "SPARKSEE_INCLUDE_DIR and SPARKSEE_LIB_DIR variables first or run ./ldbc_snb.sh --install <sparksee tag name (real tag version name)>"
-		exit
-	else
-	print_progress "Installing LDBCpp"
-	if [[ -z $LDBCPP_DIR ]]
-	then
-		svn co https://circe.ac.upc.edu/dex-projects/LDBCpp/trunk LDBCpp
-		cd LDBCpp
-		mkdir build
-		export LDBCPP_DIR=$ROOT/LDBCpp
-		cd $ROOT
-	fi
-	print_progress "Sparksee include: $SPARKSEE_INCLUDE_DIR"
-	print_progress "Sparksee lib: $SPARKSEE_LIB_DIR"
-	cd $LDBCPP_DIR
-	mkdir build	
-	cd build
-	cmake -DSPARKSEE_INCLUDES=$SPARKSEE_INCLUDE_DIR -DSPARKSEE_LIB=$SPARKSEE_LIB_DIR -DCMAKE_BUILD_TYPE=RELEASE ..
-	make server -j16
-	make snbLoaderStandalone -j16
-	make precompute -j16
-	cd $ROOT
-	fi
-}
-
-
 # patches the ldbc_driver with the patch from LDBCpp
 function patch_ldbc_driver {
-	if [[ ! -z $LDBCPP_DIR ]]
+	if [[ ! -z $LDBC_SPARKSEE ]]
 	then 
 		mkdir -p ldbc_driver/src/main/java/com/ldbc/driver/sparksee/workloads/ldbc/snb/interactive/db
-		cp $LDBCPP_DIR/driverPatch/*.java ldbc_driver/src/main/java/com/ldbc/driver/sparksee/workloads/ldbc/snb/interactive/db/
-		cp $LDBCPP_DIR/driverPatch/pom.xml ldbc_driver/
-		cp $LDBCPP_DIR/driverPatch/configurations/* ldbc_driver/configuration/ldbc/snb/interactive/
+		cp $LDBC_SPARKSEE/driverPatch/*.java ldbc_driver/src/main/java/com/ldbc/driver/sparksee/workloads/ldbc/snb/interactive/db/
+		cp $LDBC_SPARKSEE/driverPatch/pom.xml ldbc_driver/
+		cp $LDBC_SPARKSEE/driverPatch/configurations/* ldbc_driver/configuration/ldbc/snb/interactive/
 	fi
 }
 
@@ -132,7 +75,7 @@ function synch_ldbc_driver {
 
 # installs the ldbc_driver
 function install_ldbc_driver {
-	if [[ -z $LDBCPP_DIR ]]
+	if [[ -z $LDBC_SPARKSEE ]]
 	then
 		print_error "Cannot install ldbc_driver, need LDBCpp first"
 	else
@@ -212,14 +155,8 @@ then
 				-h|--help)
 					HELP=YES
 					;;
-				-s|--sparksee)
-					SPARKSEE="$2"
-					shift # past argument
-					;;
-
-				-s|--ldbcpp)
-					INSTALL_LDBC=true
-					shift # past argument
+				-l|--ldbc-sparksee)
+					LDBC_SPARKSEE=$2
 					;;
 			esac
 			shift
@@ -231,25 +168,22 @@ then
 			exit
 		fi
 
-		if [[ ! -z $SPARKSEE ]]
+		if [[  -z $LDBC_SPARKSEE ]]
 		then
-			install_sparksee $SPARKSEE
+			print_install_usage
+			exit
 		fi
 
-		if [[ ! -z $INSTALL_LDBC ]]
-		then
-			install_ldbcpp 
-			install_ldbc_driver
-		fi
+    install_ldbc_driver
 fi
 
 ##### RUN SECTION #######
 
 if [[ $1 == run ]]
 then
-	if [[ ! -z $LDBCPP_DIR && -f $LDBCPP_DIR/build/server ]]
+	if [[ ! -z $LDBC_SPARKSEE && -f $LDBC_SPARKSEE/build/server ]]
 	then
-		$LDBCPP_DIR/scripts/test_server.sh $@ --server $LDBCPP_DIR --driver ./ldbc_driver
+		$LDBC_SPARKSEE/scripts/test_server.sh $@ --server $LDBC_SPARKSEE --driver ./ldbc_driver
 		#python2 ldbc_snb_report/create_report.py -i detail.csv -w ./ -o report
 		#mv execution* sparksee/$SPARKSEE/results/
 		#mv report.pdf sparksee/$SPARKSEE/results/
@@ -269,7 +203,7 @@ fi
 
 if [[ $1 == load ]]
 then
-	if [[ -z $LDBCPP_DIR || ! -f $LDBCPP_DIR/build/snbLoaderStandalone ]]
+	if [[ -z $LDBC_SPARKSEE || ! -f $LDBC_SPARKSEE/build/snbLoaderStandalone ]]
 	then
 		print_progress "Run ./ldbc_snb.sh install --ldbcpp first before loading"
 		exit
@@ -359,8 +293,9 @@ then
 	exit
 fi
 initialize_repository $REPOSITORY/$SCALEFACTOR/$TAG $SOURCE
-cp $LDBCPP_DIR/scripts/load_data.sh ./
-./load_data.sh $SOURCE/social_network $NUMTHREADS $NUMPARTITIONS $LDBCPP_DIR $LDBCPP_DIR/build
+cp $LDBC_SPARKSEE/scripts/load_data.sh ./
+./load_data.sh $SOURCE/social_network $NUMTHREADS $NUMPARTITIONS $LDBC_SPARKSEE
+$LDBC_SPARKSEE/build
 mv snb.gdb* $REPOSITORY/$SCALEFACTOR/$TAG
 fi
 
@@ -373,9 +308,10 @@ fi
 if [[ $1 == validate ]]
 then
 	
-	if [[ ! -z $LDBCPP_DIR && -f $LDBCPP_DIR/build/server ]]
+	if [[ ! -z $LDBC_SPARKSEE && -f $LDBC_SPARKSEE/build/server ]]
 	then
-		$LDBCPP_DIR/scripts/run_validation_dataset.sh $@ -w /tmp --ldbcpp $LDBCPP_DIR -dd ./ldbc_driver
+		$LDBC_SPARKSEE/scripts/run_validation_dataset.sh $@ -w /tmp --ldbcpp
+    $LDBC_SPARKSEE -dd ./ldbc_driver
 	else
 		print_error "Need to speficy sparksee version at the first run parameter"
 	fi
