@@ -7,7 +7,9 @@ include_directories(${SPARKSEE_INCLUDES})
 INCLUDE_DIRECTORIES(${BOOST_PATCH_INCLUDES})
 include_directories(${Boost_INCLUDE_DIR})
 
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g -pthread -std=c++11")
+set(CMAKE_CXX_FLAGS "-pthread -std=c++11")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -pg")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -NDEBUG")
 
 add_library(snbLoader STATIC
   snbLoader.cpp
