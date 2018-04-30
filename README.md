@@ -37,4 +37,11 @@ ldbc-sparksee/scripts/ldbc_snb.sh load --tag data --source $DATA --repository $R
 ```
 where $DATA is where the dataset is, $REPOSITORY is the base folder used as repository for loaded images, and <scale_factor> is the scale factor this dataset corresponds to. Finally, numthreads and numpartitions are those used to generate the dataset, and tag is tag used to identify families of loaded images (for example, for different versions of sparksee). Both tag and scalefactor will be used later to identify the dataset to run the benchmark with.
 
+## Running the benchmark
+
+To run the benchmark, type ./ldbc_snb.sh run --help to see the different options. As an example of running an scale factor 0010 bi workload, with 100 warmup opeartions and 250 benchmark operations, using 1 driver and 1 server thread, see the following command. $WORKSPACE is the folder where the sparksee image will be copied to (this is specially useful if we want to use a specific distk, for instance, a SSD). -b option specifies that we want to run the BI workload (by default, it runs the interactive workload). Finally, the -m option tells the driver to run at maximum speed, thus ignoring the scheduled start times.
+
+```
+./ldbc_snb.sh run -r $REPOSITORY -w $WORKSPACE -t data -f $PWD/ldbc_driver/configuration/ldbc/snb/bi/ldbc_snb_bi_SF-0001.properties -b -o 250 -wo 100 -st 1 -dt 1 -sf 0010 -m
+```
 
