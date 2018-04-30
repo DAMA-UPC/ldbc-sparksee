@@ -35,6 +35,6 @@ Additionally, you need a **sparksee.cfg** file in the workspace with the corresp
 ```
 ldbc-sparksee/scripts/ldbc_snb.sh load --tag data --source $DATA --repository $REPOSITORY --scalefactor <scale_factor> --numthreads 1 --numpartitions 1
 ```
-where $DATA is where the dataset is, $REPOSITORY is the base folder used as repository for loaded images, and <scale_factor> is the scale factor this dataset corresponds to. Finally, numthreads and numpartitions are those used to generate the dataset, and tag is tag used to identify families of loaded images (for example, for different versions of sparksee).
+where $DATA is where the dataset is, $REPOSITORY is the base folder used as repository for loaded images, and <scale_factor> is the scale factor this dataset corresponds to. Finally, numthreads and numpartitions are those used to generate the dataset, and tag is tag used to identify families of loaded images (for example, for different versions of sparksee). Both tag and scalefactor will be used later to identify the dataset to run the benchmark with.
 
 
