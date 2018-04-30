@@ -6,7 +6,6 @@
 # DATABASE VARIABLES
 DATABASE_REPOSITORY_DIR=
 DATABASE_WORKSPACE_DIR=
-SCALE_FACTOR=0001
 IMAGE_NAME=snb.gdb
 
 # SERVER VARIABLES
@@ -23,8 +22,8 @@ DRIVER_IGNORE_TCR=
 DRIVER_N_WARMUP_OPERATIONS=1000
 DRIVER_N_OPERATIONS=1000
 DRIVER_WORKLOAD=com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcSnbInteractiveWorkload
-DRIVER_DATABASE_CONNECTOR=com.ldbc.driver.sparksee.workloads.ldbc.snb.interactive.db.RemoteDb
 DRIVER_PARAMETERS_DIR_OPTION=ldbc.snb.interactive.parameters_dir
+DRIVER_DATABASE_CONNECTOR=com.ldbc.driver.sparksee.workloads.ldbc.snb.interactive.db.RemoteDb
 
 # options parsing
 while [[ $# > 0 ]]
@@ -90,6 +89,9 @@ do
 			DRIVER_WORKLOAD_FILE="$2"
 			shift # past argument
 			;;
+		-b|--bi)
+			BI_WORKLOAD="yes"
+			;;
 		-p|--perf)
 			PERF_FILE="$2"
 			shift # past argument
@@ -113,6 +115,8 @@ then
 	echo " -t|--tag the tag identifying the sparksee version"
 	echo " -o|--operations the number of operations to run"
 	echo " -wo|--warmupoperations the number of warmup operations to run"
+	echo " -f|--driverworkloadfile path to the workload file" 
+	echo " -b|--bi execute bi workload"
 	echo " -p|--perf execute with perf stat with the counters specified in file"
 	exit
 fi
@@ -157,11 +161,23 @@ if [[ -z "$TAG" ]]; then
   exit
 fi
 
+if [[ -z "$SCALE_FACTOR" ]]; then
+  echo "-sf/--scalefactor not set"
+  exit
+fi
+
+if [[ -z "$DRIVER_WORKLOAD_FILE" ]]; then
+  echo "-f/--driverworkloadfile not set"
+  exit
+fi
+
 
 # Setting the final driver configuration
-if [[ -z "$DRIVER_WORKLOAD_FILE" ]]; then
-	DRIVER_WORKLOAD_FILE=$DRIVER_DIR/configuration/ldbc/snb/interactive/ldbc_snb_interactive_SF-${SCALE_FACTOR}.properties
+if [[ ! -z "$BI_WORKLOAD" ]]; then
+	DRIVER_WORKLOAD=com.ldbc.driver.workloads.ldbc.snb.bi.LdbcSnbBiWorkload
+	DRIVER_PARAMETERS_DIR_OPTION=ldbc.snb.bi.parameters_dir
 fi
+
 DATABASE_SOURCE_DIR=$DATABASE_REPOSITORY_DIR/$SCALE_FACTOR/$TAG
 DRIVER_WORKLOAD_OPTS="-w $DRIVER_WORKLOAD -db $DRIVER_DATABASE_CONNECTOR -p $DRIVER_PARAMETERS_DIR_OPTION
 $DATABASE_SOURCE_DIR/substitution_parameters -p ldbc.snb.interactive.data_dir $DATABASE_SOURCE_DIR/social_network -p
