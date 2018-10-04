@@ -243,7 +243,7 @@ void ComputeCountryDateAttribute(sparksee::snb::TypeCache* cache) {
 			count++;
 			if(count % 10000 == 0) std::wcout << L"Computed attribute for " << count << L" comments out of " << comments->Count() << std::endl;
 		}
-	} catch ( Exception e ) {
+	} catch ( Exception& e ) {
 		std::cout << e.Message() << std::endl;
 		std::wcout << L"Count: " << count << std::endl;
 		std::wcout << L"Comment Id: " << comment_id << std::endl;

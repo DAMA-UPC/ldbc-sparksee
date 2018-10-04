@@ -29,7 +29,7 @@
 #define BEGIN_EXCEPTION \
             try { 
 #define END_EXCEPTION \
-            } catch ( gdb::Exception e ) { \
+            } catch ( gdb::Exception& e ) { \
               std::cout << "EXCEPTION WHEN RUNNING QUERY" << std::endl; \
               std::cout << e.Message() << std::endl; \
               exit(1); \

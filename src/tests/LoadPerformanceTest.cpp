@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
   }
   long long elapsed_time = (end.tv_sec*1000 + end.tv_usec*0.001) - (start.tv_sec*1000.0 + start.tv_usec*0.001);
   std::cout << "Finished test in " << elapsed_time << " ms. Average tp:" << average_tp << std::endl;
-  }catch(gdb::Exception e) {
+  }catch(gdb::Exception& e) {
     std::cout << e.Message() << std::endl;
   }
 

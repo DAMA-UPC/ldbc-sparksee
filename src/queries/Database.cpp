@@ -56,7 +56,7 @@ void Database::shutdown() {
   if (database_ != 0) {
       try{
     delete database_;
-      } catch( gdb::Exception e ) {
+      } catch( gdb::Exception& e ) {
           std::cout << e.Message() << std::endl;
       }
   }
