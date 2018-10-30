@@ -9,7 +9,7 @@ include_directories(${Boost_INCLUDE_DIR})
 
 set(CMAKE_CXX_FLAGS "-pthread -std=c++11")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -pg")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -NDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 add_library(snbLoader STATIC
   snbLoader.cpp

@@ -91,8 +91,12 @@ int main(int argc, char *argv[]) {
   //set_thread_affinity(threads);
 
   auto query_strategy = ldbc_server::QueryStrategy::Factory(
-      &database, query_str.c_str(), json_file.c_str(), num_queries, port,
+      &database, 
+      query_str.c_str(), 
+      json_file.c_str(), 
+      num_queries, port,
       shutdown_port);
+
   auto thread_strategy =
       ldbc_server::ThreadStrategy::Factory(thread_str.c_str(), workers);
 

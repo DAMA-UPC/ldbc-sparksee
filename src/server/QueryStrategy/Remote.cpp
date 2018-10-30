@@ -19,11 +19,16 @@ Remote::Remote(sparksee::Database *database, unsigned int port,
     : acceptor_(io_service_, boost::asio::ip::tcp::endpoint(
                                  boost::asio::ip::tcp::v4(), static_cast<unsigned short>(port))),
       shutdown_(io_service_, boost::asio::ip::tcp::endpoint(
-                                 boost::asio::ip::tcp::v4(), static_cast<unsigned short>(shutdown_port))) {
+                                 boost::asio::ip::tcp::v4(), static_cast<unsigned short>(shutdown_port))),
+      serverup_(io_service_, boost::asio::ip::tcp::endpoint(
+                                 boost::asio::ip::tcp::v4(), static_cast<unsigned short>(9997)))
+      {
   database_ = database;
   end_ = false;
-  std::thread thread([this]() { this->shutdown_wait(); });
-  thread.detach();
+  std::thread shutdown_thread([this]() { this->shutdown_wait(); });
+  shutdown_thread.detach();
+  std::thread up_thread([this]() { this->server_start_conn(); });
+  up_thread.detach();
 }
 
 void Remote::shutdown_wait() {
@@ -32,6 +37,15 @@ void Remote::shutdown_wait() {
   std::cout << "Received shutdown signal" << std::endl;
   end_ = true;
   acceptor_.close();
+}
+
+void Remote::server_start_conn() {
+  boost::asio::ip::tcp::socket socket(io_service_);
+  while(!end_) {
+    serverup_.accept(socket);
+    std::cout << "Received status connection" << std::endl;
+  }
+  serverup_.close();
 }
 
 std::map<std::string, std::vector<std::string>> Remote::next_parameter(int id) {

@@ -167,8 +167,8 @@ datatypes::Buffer Execute(gdb::Session *sess, const char* country1, const char* 
       graph->GetAttribute(iter_city1->first, cache->place_name_t, value);
       std::string city_name = sparksee::utils::to_string(value.GetString());
 
-      PersonPair personPair1;
-      PersonPair personPair2;
+      PersonPair personPair1(0,0);
+      PersonPair personPair2(0,0);
       int best_score = -1;
 
       for(std::vector<PersonPair>::iterator iter_persons1 = iter_city1->second->begin();

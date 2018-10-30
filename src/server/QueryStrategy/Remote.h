@@ -23,11 +23,13 @@ public:
 
 private:
   void shutdown_wait();
+  void server_start_conn();
 
   std::map<std::string, std::vector<std::string>> next_parameter(int id) override;
   boost::asio::io_service io_service_;
   boost::asio::ip::tcp::acceptor acceptor_;
   boost::asio::ip::tcp::acceptor shutdown_;
+  boost::asio::ip::tcp::acceptor serverup_;
 };
 }
 }
