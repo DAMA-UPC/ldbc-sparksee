@@ -138,7 +138,7 @@ function initialize_repository {
 
 # SCRIPT STARTS HERE
 
-if [[ $1 != install  &&  $1 != run && $1 != uninstall && $1 != load && $1 != synch && $1 != validate ]]
+if [[ $1 != install  &&  $1 != run && $1 != uninstall && $1 != load && $1 != synch && $1 != validate && $1 != patch ]]
 then
 	echo "Invalid command"
 	print_usage
@@ -174,7 +174,7 @@ if [[ $1 == run ]]
 then
 	if [[ ! -z $LDBC_SPARKSEE && -f $LDBC_SPARKSEE/build/server ]]
 	then
-		$LDBC_SPARKSEE/scripts/test_server.sh $@ --server $LDBC_SPARKSEE --driver ./ldbc_driver
+		$LDBC_SPARKSEE/scripts/test_server.sh $@ --server $LDBC_SPARKSEE
 		#python2 ldbc_snb_report/create_report.py -i detail.csv -w ./ -o report
 		#mv execution* sparksee/$SPARKSEE/results/
 		#mv report.pdf sparksee/$SPARKSEE/results/
@@ -306,4 +306,19 @@ then
 		print_error "Need to speficy sparksee version at the first run parameter"
 	fi
 	exit
+fi
+
+if [[ $1 == patch ]]
+then
+	shift
+	if [[ ! -z $LDBC_SPARKSEE ]]
+	then 
+		if [[ ! -z $1 ]]
+		then
+		mkdir -p $1/src/main/java/com/ldbc/driver/sparksee/workloads/ldbc/snb/interactive/db
+		cp $LDBC_SPARKSEE/driverPatch/*.java $1/src/main/java/com/ldbc/driver/sparksee/workloads/ldbc/snb/interactive/db/
+		cp $LDBC_SPARKSEE/driverPatch/pom.xml $1/
+		cp $LDBC_SPARKSEE/driverPatch/configurations/* $1/configuration/ldbc/snb/interactive/
+	fi
+	fi
 fi

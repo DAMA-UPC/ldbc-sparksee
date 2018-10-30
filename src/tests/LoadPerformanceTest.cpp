@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
   srand (time(NULL));
 
   int num_nodes = 100000000;
-  int block_size = 50000;
+  int block_size = 1000000;
   double average_tp = 0;
 
   try{

@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
         std::thread(ldbc_server::Worker::run, std::ref(*workers[i])));
 
   }
-  set_thread_affinity(threads);
+  //set_thread_affinity(threads);
 
   auto query_strategy = ldbc_server::QueryStrategy::Factory(
       &database, query_str.c_str(), json_file.c_str(), num_queries, port,
