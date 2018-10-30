@@ -21,7 +21,7 @@ Remote::Remote(sparksee::Database *database, unsigned int port,
       shutdown_(io_service_, boost::asio::ip::tcp::endpoint(
                                  boost::asio::ip::tcp::v4(), static_cast<unsigned short>(shutdown_port))),
       serverup_(io_service_, boost::asio::ip::tcp::endpoint(
-                                 boost::asio::ip::tcp::v4(), static_cast<unsigned short>(9997)))
+                                 boost::asio::ip::tcp::v4(), static_cast<unsigned short>(9990)))
       {
   database_ = database;
   end_ = false;
@@ -40,8 +40,8 @@ void Remote::shutdown_wait() {
 }
 
 void Remote::server_start_conn() {
-  boost::asio::ip::tcp::socket socket(io_service_);
   while(!end_) {
+	  boost::asio::ip::tcp::socket socket(io_service_);
     serverup_.accept(socket);
     std::cout << "Received status connection" << std::endl;
   }

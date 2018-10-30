@@ -208,7 +208,7 @@ OUTPUT_FILE_BASE_NAME=execution_${SCALE_FACTOR}_${SERVER_N_THREADS}_${DRIVER_N_T
 
 if [[ -z $PERF_FILE ]]
 then
-	taskset -c 0 $SERVER_DIR/build/server -q remote -t $SERVER_THREAD_STRATEGY --threads $SERVER_N_THREADS --database $DATABASE_WORKSPACE_DIR/$IMAGE_NAME &> ${OUTPUT_FILE_BASE_NAME}.server &
+	$SERVER_DIR/build/server -q remote -t $SERVER_THREAD_STRATEGY --threads $SERVER_N_THREADS --database $DATABASE_WORKSPACE_DIR/$IMAGE_NAME &> ${OUTPUT_FILE_BASE_NAME}.server &
 else
 	echo "WARNING: EXECUTING WITH PERF ENABLED"
 	CONTENT=$(cat $PERF_FILE)
@@ -222,7 +222,7 @@ else
 fi
 
 SERVER_PID=$!
-sleep 20s
+python2 $SERVER_DIR/scripts/waitConnection.py
 
 ####################################################################################
 
