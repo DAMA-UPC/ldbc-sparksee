@@ -24,6 +24,7 @@ DRIVER_N_OPERATIONS=1000
 DRIVER_WORKLOAD=com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcSnbInteractiveWorkload
 DRIVER_PARAMETERS_DIR_OPTION=ldbc.snb.interactive.parameters_dir
 DRIVER_DATABASE_CONNECTOR=com.ldbc.driver.sparksee.workloads.ldbc.snb.interactive.db.RemoteDb
+SPARKSEE_HOST="localhost"
 
 # options parsing
 while [[ $# > 0 ]]
@@ -95,6 +96,16 @@ do
 		-p|--perf)
 			PERF_FILE="$2"
 			shift # past argument
+			;;
+		-hs|--host)
+			SPARKSEE_HOST="$2"
+			shift # past argument
+			;;
+		-ns|--noserver)
+			NO_SERVER="yes"
+			;;
+		-nd|--nodriver)
+			NO_DRIVER="yes"
 			;;
 	esac
 	shift
@@ -206,34 +217,42 @@ echo "EXECUTING SERVER WITH $SERVER_N_THREADS"
 
 OUTPUT_FILE_BASE_NAME=execution_${SCALE_FACTOR}_${SERVER_N_THREADS}_${DRIVER_N_THREADS}
 
-if [[ -z $PERF_FILE ]]
+if [[ -z $NO_SERVER ]]
 then
-	$SERVER_DIR/build/server -q remote -t $SERVER_THREAD_STRATEGY --threads $SERVER_N_THREADS --database $DATABASE_WORKSPACE_DIR/$IMAGE_NAME &> ${OUTPUT_FILE_BASE_NAME}.server &
-else
-	echo "WARNING: EXECUTING WITH PERF ENABLED"
-	CONTENT=$(cat $PERF_FILE)
-	PERF=""
-	for line in $CONTENT
-	do
-		PERF="$PERF -e $line"
-	done 
-
-	perf stat $PERF -D 10000 $SERVER_DIR/build/server -q remote -t $SERVER_THREAD_STRATEGY --threads $SERVER_N_THREADS --database $DATABASE_WORKSPACE_DIR/$IMAGE_NAME &> ${OUTPUT_FILE_BASE_NAME}.server &
+	if [[ -z $PERF_FILE ]]
+	then
+		nohup $SERVER_DIR/build/server -q remote -t $SERVER_THREAD_STRATEGY --threads $SERVER_N_THREADS --database $DATABASE_WORKSPACE_DIR/$IMAGE_NAME &> ${OUTPUT_FILE_BASE_NAME}.server &
+	else
+		echo "WARNING: EXECUTING WITH PERF ENABLED"
+		CONTENT=$(cat $PERF_FILE)
+		PERF=""
+		for line in $CONTENT
+		do
+			PERF="$PERF -e $line"
+		done 
+	
+		nohup perf stat $PERF -D 10000 $SERVER_DIR/build/server -q remote -t $SERVER_THREAD_STRATEGY --threads $SERVER_N_THREADS --database $DATABASE_WORKSPACE_DIR/$IMAGE_NAME &> ${OUTPUT_FILE_BASE_NAME}.server &
+	fi
 fi
 
-SERVER_PID=$!
-python2 $SERVER_DIR/scripts/waitConnection.py
+python2 $SERVER_DIR/scripts/waitConnection.py $SPARKSEE_HOST
 
 ####################################################################################
 
 echo "EXECUTING DRIVER WORKLOAD"
 
-java -cp $DRIVER_DIR/target/jeeves-0.3-SNAPSHOT.jar com.ldbc.driver.Client -wu $DRIVER_N_WARMUP_OPERATIONS -oc $DRIVER_N_OPERATIONS $DRIVER_OPTS $DRIVER_WORKLOAD_OPTS -P $DRIVER_WORKLOAD_FILE -P $DATABASE_SOURCE_DIR/social_network/updateStream.properties &> ${OUTPUT_FILE_BASE_NAME}.driver &
+if [[ -z $NO_DRIVER ]]
+then
+java -cp $DRIVER_DIR/target/jeeves-0.3-SNAPSHOT.jar com.ldbc.driver.Client -wu $DRIVER_N_WARMUP_OPERATIONS -oc $DRIVER_N_OPERATIONS $DRIVER_OPTS $DRIVER_WORKLOAD_OPTS -P $DRIVER_WORKLOAD_FILE -P $DATABASE_SOURCE_DIR/social_network/updateStream.properties &> ${OUTPUT_FILE_BASE_NAME}.driver -p "sparksee.host|$SPARKSEE_HOST" &
+fi
 
 DRIVER_PID=$!
 wait $DRIVER_PID
-cp ./results/LDBC-results_log.csv ${OUTPUT_FILE_BASE_NAME}.log
-python $SERVER_DIR/scripts/shutdownServer.py
-wait $SERVER_PID
-mkdir -p ./results/$SCALE_FACTOR/$TAG/
-mv execution* ./results/$SCALE_FACTOR/$TAG/
+if [[ -z $NO_DRIVER ]]
+then
+	cp ./results/LDBC-results_log.csv ${OUTPUT_FILE_BASE_NAME}.log
+	python $SERVER_DIR/scripts/shutdownServer.py $SPARKSEE_HOST
+	wait $SERVER_PID
+	mkdir -p ./results/$SCALE_FACTOR/$TAG/
+	mv execution* ./results/$SCALE_FACTOR/$TAG/
+fi
