@@ -19,4 +19,4 @@ while not connected:
     time.sleep(5)
 
 s.close()
-print "Server Up!"
+print("Server Up!")
