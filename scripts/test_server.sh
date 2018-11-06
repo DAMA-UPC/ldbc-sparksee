@@ -198,7 +198,6 @@ $DRIVER_IGNORE_TCR"
 
 ####################################################################################
 
-echo "COPYING IMAGE $DATABASE_SOURCE_DIR/$IMAGE_NAME to $DATABASE_WORKSPACE_DIR/$IMAGE_NAME"
 
 if [[ -a $DATABASE_WORKSPACE_DIR/$TAG/$IMAGE_NAME ]]
 then
@@ -214,6 +213,8 @@ fi
 
 if [[ -z $NO_SERVER ]]
 then
+
+	echo "COPYING IMAGE $DATABASE_SOURCE_DIR/$IMAGE_NAME to $DATABASE_WORKSPACE_DIR/$IMAGE_NAME"
 
 	cp -rf $DATABASE_SOURCE_DIR/$IMAGE_NAME $DATABASE_WORKSPACE_DIR/$IMAGE_NAME
 	
