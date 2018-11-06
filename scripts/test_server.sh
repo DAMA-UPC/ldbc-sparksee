@@ -211,14 +211,16 @@ then
 	echo "LOAD IT FIRST"
 	exit
 fi
-cp -rf $DATABASE_SOURCE_DIR/$IMAGE_NAME $DATABASE_WORKSPACE_DIR/$IMAGE_NAME
-
-echo "EXECUTING SERVER WITH $SERVER_N_THREADS"
-
-OUTPUT_FILE_BASE_NAME=execution_${SCALE_FACTOR}_${SERVER_N_THREADS}_${DRIVER_N_THREADS}
 
 if [[ -z $NO_SERVER ]]
 then
+
+	cp -rf $DATABASE_SOURCE_DIR/$IMAGE_NAME $DATABASE_WORKSPACE_DIR/$IMAGE_NAME
+	
+	echo "EXECUTING SERVER WITH $SERVER_N_THREADS"
+	
+	OUTPUT_FILE_BASE_NAME=execution_${SCALE_FACTOR}_${SERVER_N_THREADS}_${DRIVER_N_THREADS}
+
 	if [[ -z $PERF_FILE ]]
 	then
 		nohup $SERVER_DIR/build/server -q remote -t $SERVER_THREAD_STRATEGY --threads $SERVER_N_THREADS --database $DATABASE_WORKSPACE_DIR/$IMAGE_NAME &> ${OUTPUT_FILE_BASE_NAME}.server &
@@ -239,10 +241,10 @@ python2 $SERVER_DIR/scripts/waitConnection.py $SPARKSEE_HOST
 
 ####################################################################################
 
-echo "EXECUTING DRIVER WORKLOAD"
 
 if [[ -z $NO_DRIVER ]]
 then
+echo "EXECUTING DRIVER WORKLOAD"
 java -cp $DRIVER_DIR/target/jeeves-0.3-SNAPSHOT.jar com.ldbc.driver.Client -wu $DRIVER_N_WARMUP_OPERATIONS -oc $DRIVER_N_OPERATIONS $DRIVER_OPTS $DRIVER_WORKLOAD_OPTS -P $DRIVER_WORKLOAD_FILE -P $DATABASE_SOURCE_DIR/social_network/updateStream.properties &> ${OUTPUT_FILE_BASE_NAME}.driver -p "sparksee.host|$SPARKSEE_HOST" &
 fi
 
