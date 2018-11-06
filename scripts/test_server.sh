@@ -237,13 +237,13 @@ then
 	fi
 fi
 
-python2 $SERVER_DIR/scripts/waitConnection.py $SPARKSEE_HOST
 
 ####################################################################################
 
 
 if [[ -z $NO_DRIVER ]]
 then
+python2 $SERVER_DIR/scripts/waitConnection.py $SPARKSEE_HOST
 echo "EXECUTING DRIVER WORKLOAD"
 java -cp $DRIVER_DIR/target/jeeves-0.3-SNAPSHOT.jar com.ldbc.driver.Client -wu $DRIVER_N_WARMUP_OPERATIONS -oc $DRIVER_N_OPERATIONS $DRIVER_OPTS $DRIVER_WORKLOAD_OPTS -P $DRIVER_WORKLOAD_FILE -P $DATABASE_SOURCE_DIR/social_network/updateStream.properties &> ${OUTPUT_FILE_BASE_NAME}.driver -p "sparksee.host|$SPARKSEE_HOST" &
 fi
