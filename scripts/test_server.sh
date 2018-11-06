@@ -211,6 +211,8 @@ then
 	exit
 fi
 
+OUTPUT_FILE_BASE_NAME=execution_${SCALE_FACTOR}_${SERVER_N_THREADS}_${DRIVER_N_THREADS}
+
 if [[ -z $NO_SERVER ]]
 then
 
@@ -220,7 +222,6 @@ then
 	
 	echo "EXECUTING SERVER WITH $SERVER_N_THREADS"
 	
-	OUTPUT_FILE_BASE_NAME=execution_${SCALE_FACTOR}_${SERVER_N_THREADS}_${DRIVER_N_THREADS}
 
 	if [[ -z $PERF_FILE ]]
 	then
@@ -246,16 +247,13 @@ if [[ -z $NO_DRIVER ]]
 then
 python2 $SERVER_DIR/scripts/waitConnection.py $SPARKSEE_HOST
 echo "EXECUTING DRIVER WORKLOAD"
-java -cp $DRIVER_DIR/target/jeeves-0.3-SNAPSHOT.jar com.ldbc.driver.Client -wu $DRIVER_N_WARMUP_OPERATIONS -oc $DRIVER_N_OPERATIONS $DRIVER_OPTS $DRIVER_WORKLOAD_OPTS -P $DRIVER_WORKLOAD_FILE -P $DATABASE_SOURCE_DIR/social_network/updateStream.properties &> ${OUTPUT_FILE_BASE_NAME}.driver -p "sparksee.host|$SPARKSEE_HOST" &
+java -cp $DRIVER_DIR/target/jeeves-standalone.jar com.ldbc.driver.Client -wu $DRIVER_N_WARMUP_OPERATIONS -oc $DRIVER_N_OPERATIONS $DRIVER_OPTS $DRIVER_WORKLOAD_OPTS -P $DRIVER_WORKLOAD_FILE -P $DATABASE_SOURCE_DIR/social_network/updateStream.properties &> ${OUTPUT_FILE_BASE_NAME}.driver -p "sparksee.host|$SPARKSEE_HOST"
 fi
 
-DRIVER_PID=$!
-wait $DRIVER_PID
 if [[ -z $NO_DRIVER ]]
 then
 	cp ./results/LDBC-results_log.csv ${OUTPUT_FILE_BASE_NAME}.log
-	python $SERVER_DIR/scripts/shutdownServer.py $SPARKSEE_HOST
-	wait $SERVER_PID
+	python2 $SERVER_DIR/scripts/shutdownServer.py $SPARKSEE_HOST
 	mkdir -p ./results/$SCALE_FACTOR/$TAG/
 	mv execution* ./results/$SCALE_FACTOR/$TAG/
 fi
