@@ -31,10 +31,9 @@ public class RemoteDb extends Db {
     @Override
     protected void onInit(Map<String, String> properties, LoggingService lService) throws DbException {
         remoteDBConnectionState = new RemoteDBConnectionState();
-        //host = properties.get("sparksee.host");
         //port = Integer.parseInt(properties.get("sparksee.port"));
         //host = "147.83.35.200";
-        host = "127.0.0.1";
+        host = properties.get("sparksee.host");
         port = 9998;
         
         registerOperationHandler(LdbcQuery1.class,  LdbcQuery1Sparksee.class);
