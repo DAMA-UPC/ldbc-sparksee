@@ -21,7 +21,6 @@ function print_usage {
 function print_install_usage {
 	echo "ldbc_snb.sh install [options]"
 	echo "		-h/--help <help info> "
-	echo "		-l/--ldbc-sparksee <The root folder of ldbc-sparksee> "
 }
 
 # Prints the usage of load command
@@ -54,41 +53,44 @@ function synch_ldbcpp {
 	cd $ROOT
 }
 
-# patches the ldbc_driver with the patch from LDBCpp
-function patch_ldbc_driver {
+# patches the ldbc_snb_driver with the patch from LDBCpp
+function patch_ldbc_snb_driver {
 	if [[ ! -z $LDBC_SPARKSEE ]]
 	then 
-		mkdir -p ldbc_driver/src/main/java/com/ldbc/driver/sparksee/workloads/ldbc/snb/interactive/db
-		cp $LDBC_SPARKSEE/driverPatch/*.java ldbc_driver/src/main/java/com/ldbc/driver/sparksee/workloads/ldbc/snb/interactive/db/
-		cp $LDBC_SPARKSEE/driverPatch/pom.xml ldbc_driver/
-		cp $LDBC_SPARKSEE/driverPatch/configurations/* ldbc_driver/configuration/ldbc/snb/interactive/
+		mkdir -p ldbc_snb_driver/src/main/java/com/ldbc/driver/sparksee/workloads/ldbc/snb/interactive/db
+		cp $LDBC_SPARKSEE/driverPatch/*.java ldbc_snb_driver/src/main/java/com/ldbc/driver/sparksee/workloads/ldbc/snb/interactive/db/
+		cp $LDBC_SPARKSEE/driverPatch/pom.xml ldbc_snb_driver/
+		cp $LDBC_SPARKSEE/driverPatch/configurations/* ldbc_snb_driver/configuration/ldbc/snb/interactive/
 	fi
 }
 
 # syncs the driver with the latest version in the repository
-function synch_ldbc_driver {
+function synch_ldbc_snb_driver {
 	print_progress "Syncing LDBC Driver"
-	cd ldbc_driver 
+	cd ldbc_snb_driver 
 	git pull
 	cd $ROOT
 }
 
-# installs the ldbc_driver
-function install_ldbc_driver {
+# installs the ldbc_snb_driver
+function install_ldbc_snb_driver {
 	if [[ -z $LDBC_SPARKSEE ]]
 	then
-		print_error "Cannot install ldbc_driver, set LDBC_SPARKSEE first"
+		print_error "Cannot install ldbc_snb_driver, set LDBC_SPARKSEE first"
 	else
 		print_progress "Installing LDBC Driver"
-		if [[ ! -d ldbc_driver ]]
+		if [[ ! -d ldbc_snb_driver ]]
 		then
-			git clone https://github.com/ldbc/ldbc_driver.git
+			git clone https://github.com/ldbc/ldbc_snb_driver.git
 		else
-			synch_ldbc_driver
+			synch_ldbc_snb_driver
 		fi
 
-		patch_ldbc_driver
-		cd ldbc_driver
+		cd ldbc_snb_driver
+		git checkout dev
+		cd ..
+		patch_ldbc_snb_driver
+		cd ldbc_snb_driver
 		mvn -DskipTests package
 	fi
 	cd $ROOT
@@ -124,7 +126,7 @@ function setup_folder_structure {
 function uninstall {
 	rm -rf sparksee
 	rm -rf LDBCpp
-	rm -rf ldbc_driver
+	rm -rf ldbc_snb_driver
 	rm -rf ldbc_snb_report
 }
 
@@ -165,7 +167,7 @@ then
 			exit
 		fi
 
-    install_ldbc_driver
+    install_ldbc_snb_driver
 fi
 
 ##### RUN SECTION #######
@@ -301,7 +303,7 @@ then
 	if [[ ! -z $LDBC_SPARKSEE && -f $LDBC_SPARKSEE/build/server ]]
 	then
 		$LDBC_SPARKSEE/scripts/run_validation_dataset.sh $@ -w /tmp --ldbcpp
-    $LDBC_SPARKSEE -dd ./ldbc_driver
+    $LDBC_SPARKSEE -dd ./ldbc_snb_driver
 	else
 		print_error "Need to speficy sparksee version at the first run parameter"
 	fi

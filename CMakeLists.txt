@@ -16,6 +16,9 @@ set(DEFAULT_DEFINES "-fno-omit-frame-pointer -ggdb -g -fPIC
 -D_FILE_OFFSET_BITS=64 -Wall -Werror -DBOOST_SPIRIT_THREADSAFE
 -Wno-error=deprecated -DCAPTURE_EXCEPTIONS")
 
+set(BOOST_ROOT "/home/aprat/smile/libs/boost_install")
+set(BOOST_INCLUDEDIR "/home/aprat/smile/libs/boost_install/include/")
+set(BOOST_LIBRARYDIR "/home/aprat/smile/libs/boost_install/lib/")
 set(Boost_USE_STATIC_LIBS OFF) 
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_RUNTIME OFF) 
