@@ -141,6 +141,10 @@ int main(int argc, char *argv[]) {
     statistics.add(workers[i]->stats());
   }
 
+  for(ldbc_server::Worker* worker : workers) {
+    delete worker;
+  }
+
   delete thread_strategy;
   delete query_strategy;
   database.shutdown();

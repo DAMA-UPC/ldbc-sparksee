@@ -113,6 +113,7 @@ namespace interactive {
                             Result res = {work_at_year, friend_id, friend_oid, company_oid, sparksee::utils::to_string(val.GetString())};
                             intermediate_result.push_back(res);
                         }
+                        delete e_data;
                     } 
                 }
                 delete iter_work_ats;

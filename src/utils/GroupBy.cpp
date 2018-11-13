@@ -86,6 +86,7 @@ namespace sparksee {
                         current = count.insert(std::pair<gdb::oid_t, gdb::Objects*>(key, sess_.NewObjects())).first;
                     }
                     current->second->Add(other);
+                    delete e_data;
                 }
                 delete iter_edges;
                 for( std::map<gdb::oid_t, gdb::Objects*>::iterator it = count.begin(); it != count.end(); ++it){

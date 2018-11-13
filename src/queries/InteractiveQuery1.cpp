@@ -233,6 +233,7 @@ namespace interactive {
                         }
                     delete neighbors;
                 }
+                delete iter_candidates;
                 delete candidates;
             }
             delete visited;
