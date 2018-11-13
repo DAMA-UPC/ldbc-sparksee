@@ -182,12 +182,26 @@ if [[ -z "$DRIVER_WORKLOAD_FILE" ]]; then
   exit
 fi
 
-
 # Setting the final driver configuration
 if [[ ! -z "$BI_WORKLOAD" ]]; then
 	DRIVER_WORKLOAD=com.ldbc.driver.workloads.ldbc.snb.bi.LdbcSnbBiWorkload
 	DRIVER_PARAMETERS_DIR_OPTION=ldbc.snb.bi.parameters_dir
 fi
+
+OUTPUT_FILE_BASE_NAME=execution_${SCALE_FACTOR}_${SERVER_N_THREADS}_${DRIVER_N_THREADS}
+
+######################## PRINTING BENCHMARK CONFIG ##################################
+rm ${OUTPUT_FILE_BASE_NAME}.config
+echo "scale_factor=$SCALE_FACTOR" >> ${OUTPUT_FILE_BASE_NAME}.config
+echo "tag=$TAG" >> ${OUTPUT_FILE_BASE_NAME}.config
+echo "driver_threads=$DRIVER_N_THREADS" >> ${OUTPUT_FILE_BASE_NAME}.config
+echo "server_threads=$SERVER_N_THREADS" >> ${OUTPUT_FILE_BASE_NAME}.config
+echo "warmup_ops=$DRIVER_N_WARMUP_OPERATIONS" >> ${OUTPUT_FILE_BASE_NAME}.config
+echo "ops=$DRIVER_N_OPERATIONS" >> ${OUTPUT_FILE_BASE_NAME}.config
+echo "tcr=$DRIVER_TCR" >> ${OUTPUT_FILE_BASE_NAME}.config
+echo "ignore_tcr=$DRIVER_IGNORE_TCR" >> ${OUTPUT_FILE_BASE_NAME}.config
+echo "workload=$DRIVER_WORKLOAD" >> ${OUTPUT_FILE_BASE_NAME}.config 
+
 
 DATABASE_SOURCE_DIR=$DATABASE_REPOSITORY_DIR/$SCALE_FACTOR/$TAG
 DRIVER_WORKLOAD_OPTS="-w $DRIVER_WORKLOAD -db $DRIVER_DATABASE_CONNECTOR -p $DRIVER_PARAMETERS_DIR_OPTION
@@ -211,17 +225,16 @@ then
 	exit
 fi
 
-OUTPUT_FILE_BASE_NAME=execution_${SCALE_FACTOR}_${SERVER_N_THREADS}_${DRIVER_N_THREADS}
 
 if [[ -z $NO_SERVER ]]
 then
-
 	echo "COPYING IMAGE $DATABASE_SOURCE_DIR/$IMAGE_NAME to $DATABASE_WORKSPACE_DIR/$IMAGE_NAME"
 
 	cp -rf $DATABASE_SOURCE_DIR/$IMAGE_NAME $DATABASE_WORKSPACE_DIR/$IMAGE_NAME
 	
 	echo "EXECUTING SERVER WITH $SERVER_N_THREADS"
 	
+  rm sparksee.log
 
 	if [[ -z $PERF_FILE ]]
 	then
@@ -256,4 +269,6 @@ then
 	python2 $SERVER_DIR/scripts/shutdownServer.py $SPARKSEE_HOST
 	mkdir -p ./results/$SCALE_FACTOR/$TAG/
 	mv execution* ./results/$SCALE_FACTOR/$TAG/
+  cp sparksee.cfg ./results/$SCALE_FACTOR/$TAG/${OUTPUT_FILE_BASE_NAME}.sparksee.cfg
+  cp sparksee.log ./results/$SCALE_FACTOR/$TAG/${OUTPUT_FILE_BASE_NAME}.sparksee.log
 fi
