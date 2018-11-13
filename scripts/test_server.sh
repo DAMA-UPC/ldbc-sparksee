@@ -236,20 +236,12 @@ then
 	
   rm sparksee.log
 
-	if [[ -z $PERF_FILE ]]
-	then
-		nohup $SERVER_DIR/build/server -q remote -t $SERVER_THREAD_STRATEGY --threads $SERVER_N_THREADS --database $DATABASE_WORKSPACE_DIR/$IMAGE_NAME &> ${OUTPUT_FILE_BASE_NAME}.server &
-	else
-		echo "WARNING: EXECUTING WITH PERF ENABLED"
-		CONTENT=$(cat $PERF_FILE)
-		PERF=""
-		for line in $CONTENT
-		do
-			PERF="$PERF -e $line"
-		done 
-	
-		nohup perf stat $PERF -D 10000 $SERVER_DIR/build/server -q remote -t $SERVER_THREAD_STRATEGY --threads $SERVER_N_THREADS --database $DATABASE_WORKSPACE_DIR/$IMAGE_NAME &> ${OUTPUT_FILE_BASE_NAME}.server &
-	fi
+  if [[ -z $NO_DRIVER ]]
+  then
+    valgrind $SERVER_DIR/build/server -q remote -t $SERVER_THREAD_STRATEGY --threads $SERVER_N_THREADS --database $DATABASE_WORKSPACE_DIR/$IMAGE_NAME &> ${OUTPUT_FILE_BASE_NAME}.server &
+  else
+    $SERVER_DIR/build/server -q remote -t $SERVER_THREAD_STRATEGY --threads $SERVER_N_THREADS --database $DATABASE_WORKSPACE_DIR/$IMAGE_NAME &> ${OUTPUT_FILE_BASE_NAME}.server
+  fi
 fi
 
 
@@ -269,6 +261,12 @@ then
 	python2 $SERVER_DIR/scripts/shutdownServer.py $SPARKSEE_HOST
 	mkdir -p ./results/$SCALE_FACTOR/$TAG/
 	mv execution* ./results/$SCALE_FACTOR/$TAG/
+fi
+
+if [[ -z $NO_SERVER ]]
+then
+	mkdir -p ./results/$SCALE_FACTOR/$TAG/
   cp sparksee.cfg ./results/$SCALE_FACTOR/$TAG/${OUTPUT_FILE_BASE_NAME}.sparksee.cfg
   cp sparksee.log ./results/$SCALE_FACTOR/$TAG/${OUTPUT_FILE_BASE_NAME}.sparksee.log
+	mv execution* ./results/$SCALE_FACTOR/$TAG/
 fi
