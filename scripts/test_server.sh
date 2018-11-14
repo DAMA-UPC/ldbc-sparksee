@@ -238,7 +238,7 @@ then
 
   if [[ -z $NO_DRIVER ]]
   then
-    valgrind $SERVER_DIR/build/server -q remote -t $SERVER_THREAD_STRATEGY --threads $SERVER_N_THREADS --database $DATABASE_WORKSPACE_DIR/$IMAGE_NAME &> ${OUTPUT_FILE_BASE_NAME}.server &
+    $SERVER_DIR/build/server -q remote -t $SERVER_THREAD_STRATEGY --threads $SERVER_N_THREADS --database $DATABASE_WORKSPACE_DIR/$IMAGE_NAME &> ${OUTPUT_FILE_BASE_NAME}.server &
   else
     $SERVER_DIR/build/server -q remote -t $SERVER_THREAD_STRATEGY --threads $SERVER_N_THREADS --database $DATABASE_WORKSPACE_DIR/$IMAGE_NAME &> ${OUTPUT_FILE_BASE_NAME}.server
   fi
