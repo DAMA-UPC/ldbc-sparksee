@@ -75,12 +75,6 @@ if not options.log_file:
 if not options.benchmark_config_file:
     parser.error("Benchmark config file missing")
 
-if not options.sparksee_log_file:
-    parser.error("Sparksee log file missing")
-
-if not options.sparksee_config_file:
-    parser.error("Sparksee config file missing")
-
 # Initializing Latex Document
 geometry_options = {
 		    "margin" : "1.5cm",
@@ -133,10 +127,11 @@ with document.create(pylatex.Section("Configuration")):
 	
 	#### CREATING SPARKSEE CONFIG TABLE
 	
-	create_property_value_table(options.sparksee_config_file,
-                            document,
-                            "=",
-                            "Sparksee Configuration")
+        if options.sparksee_config_file:
+            create_property_value_table(options.sparksee_config_file,
+                                        document,
+                                        "=",
+                                        "Sparksee Configuration")
 
 
 
@@ -211,6 +206,7 @@ with document.create(Section("Execution Results")):
 	plt.clf()
 	fig = plt.figure()
 	host = fig.add_subplot(111)
+        legend_handles = []
 	
 	# Plotting difference between actual and scheduled start times
 	mintime = log.loc[0,"scheduled_start_time"]
@@ -226,6 +222,7 @@ with document.create(Section("Execution Results")):
 	                         color = reads_color,
 	                         label = "reads",
 	                         zorder = 1.0)
+        legend_handles.append(reads_handle[0])
 	updates_minutes = timestamp_to_minutes((np.array(updates["actual_start_time"]) - mintime))
 	updates_difference = np.array(updates["actual_start_time"]) - np.array(updates["scheduled_start_time"])
 	updates_handle = host.plot(updates_minutes, 
@@ -236,6 +233,7 @@ with document.create(Section("Execution Results")):
 	                           color = updates_color,
 	                           label = "updates",
 	                           zorder = 1.0)
+        legend_handles.append(updates_handle[0])
 	shorts_minutes = timestamp_to_minutes((np.array(shorts["actual_start_time"]) - mintime))
 	shorts_difference = np.array(shorts["actual_start_time"]) - np.array(shorts["scheduled_start_time"])
 	shorts_handle = host.plot(shorts_minutes, 
@@ -246,6 +244,7 @@ with document.create(Section("Execution Results")):
 	                          color = shorts_color,
 	                          label = "shorts",
 	                          zorder = 1.0)
+        legend_handles.append(shorts_handle[0])
 	
 	
 	# Plotting horizontal line at 1 second
@@ -253,6 +252,7 @@ with document.create(Section("Execution Results")):
 	                             [1000 for i in xrange(len(minutes))], 
 	                             label="threshold",
 	                             zorder = 1.0)
+        legend_handles.append(threshold_handle[0])
 	
 	
 	host.set_xlabel("minutes")
@@ -269,63 +269,62 @@ with document.create(Section("Execution Results")):
 	                     int(row[1]["execution_duration_MILLISECONDS"]) - mintime)/(window_size * 1000)
 	    actual_buckets[actual_bucket] += 1
 	
-	throughput_handle = par1.plot(np.arange(0,max(actual_seconds)/60.0,window_size/60.0),
+        xdata = np.arange(0,max(actual_seconds)/60.0,window_size/60.0)
+	throughput_handle = par1.plot(xdata,
 	                              actual_buckets / float(window_size),
 	                              color = "olive",
 	                              linestyle = "-",
 	                              label = "throughput",
 	                              zorder = 1.0)
+        legend_handles.append(throughput_handle[0])
 	
 	par1.set_ylabel("Throughput (op/s)")
 	
 	# Plotting checkpoint events
 	
-	checkpoint_ranges = []
-	with open(options.sparksee_log_file) as log_file:
-	    count = 0
-	    nextrange = [0,0]
-	    for line in log_file.readlines():
-	        fields = line.split("|")
-	        if "Checkpoint" in fields[1]:
-	            date = fields[0].split(" ")[0]
-	            year = int(date.split("-")[0])
-	            month = int(date.split("-")[1])
-	            day = int(date.split("-")[2])
-	            daytime = fields[0].split(" ")[1]
-	            hour = int(daytime.split(":")[0])
-	            minute = int(daytime.split(":")[1])
-	            second = int(daytime.split(":")[2].split(".")[0])
-	            millisecond = int(daytime.split(":")[2].split(".")[1])
-	            dt = datetime.datetime(year,
-	                                   month,
-	                                   day,
-	                                   hour,
-	                                   minute,
-	                                   second,
-	                                   millisecond*1000)
-	            timestamp = int(time.mktime(dt.timetuple())*1000)
-	            index = count%2
-	            nextrange[count%2] = timestamp_to_minutes((timestamp - mintime))
-	            if count % 2 == 1:
-	                checkpoint_ranges.append((nextrange[0],nextrange[1] - nextrange[0]))
-	            count+=1
-	
-	checkpoint_ranges = filter(lambda x: x[0] > 0, checkpoint_ranges)
-	yticks = host.get_yticks()
-	checkpoint_handle = host.broken_barh(checkpoint_ranges,
-	                                      (0.0, max(yticks)),
-	                                      color = "orange",
-	                                      linewidth = 1.0,
-	                                      zorder=0.0,
-	                                      label = "checkpoint")
+        if options.sparksee_config_file:
+	    checkpoint_ranges = []
+	    with open(options.sparksee_log_file) as log_file:
+	        count = 0
+	        nextrange = [0,0]
+	        for line in log_file.readlines():
+	            fields = line.split("|")
+	            if "Checkpoint" in fields[1]:
+	                date = fields[0].split(" ")[0]
+	                year = int(date.split("-")[0])
+	                month = int(date.split("-")[1])
+	                day = int(date.split("-")[2])
+	                daytime = fields[0].split(" ")[1]
+	                hour = int(daytime.split(":")[0])
+	                minute = int(daytime.split(":")[1])
+	                second = int(daytime.split(":")[2].split(".")[0])
+	                millisecond = int(daytime.split(":")[2].split(".")[1])
+	                dt = datetime.datetime(year,
+	                                       month,
+	                                       day,
+	                                       hour,
+	                                       minute,
+	                                       second,
+	                                       millisecond*1000)
+	                timestamp = int(time.mktime(dt.timetuple())*1000)
+	                index = count%2
+	                nextrange[count%2] = timestamp_to_minutes((timestamp - mintime))
+	                if count % 2 == 1:
+	                    checkpoint_ranges.append((nextrange[0],nextrange[1] - nextrange[0]))
+	                count+=1
+	    
+	    checkpoint_ranges = filter(lambda x: x[0] > 0, checkpoint_ranges)
+	    yticks = host.get_yticks()
+	    checkpoint_handle = host.broken_barh(checkpoint_ranges,
+	                                          (0.0, max(yticks)),
+	                                          color = "orange",
+	                                          linewidth = 1.0,
+	                                          zorder=0.0,
+	                                          label = "checkpoint")
+            legend_handles.append(checkpoint_handle)
 	
 	        
-	legend = host.legend(handles=[reads_handle[0], 
-	                              updates_handle[0], 
-	                              shorts_handle[0],
-	                              threshold_handle[0],
-	                              throughput_handle[0],
-	                              checkpoint_handle])
+	legend = host.legend(handles = legend_handles)
 	plt.grid(True, axis='both')
 	plt.xticks(np.arange(min(actual_seconds)/60, max(actual_seconds)/60+1, 1))
 	fig.set_size_inches(11.86, 4)
@@ -449,7 +448,7 @@ with document.create(Section("Execution Results")):
 	ax.barh(np.arange(len(plot_data)), avg_latencies)
 	ax.set_yticks(np.arange(len(plot_data)))
 	ax.set_yticklabels(labels, fontsize=6, rotation=45)
-	ax.set_ylabel("average execution time (ms)")
+	ax.set_xlabel("average execution time (ms)")
 	fig.set_size_inches(11.86, 4)
 	plt.title("Avg. Lagencies per Query Type")
 	plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
