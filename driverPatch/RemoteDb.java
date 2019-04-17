@@ -2,14 +2,19 @@ package com.ldbc.driver.sparksee.workloads.ldbc.snb.interactive.db;
 
 import com.ldbc.driver.*;
 import com.ldbc.driver.control.LoggingService;
+import com.ldbc.driver.csv.simple.SimpleCsvFileWriter;
+import com.ldbc.driver.validation.ValidationParam;
+import com.ldbc.driver.validation.ValidationParamsToCsvRows;
 import com.ldbc.driver.workloads.ldbc.snb.bi.*;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.*;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.net.Socket;
+import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.lang.ThreadLocal;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -108,11 +113,49 @@ public class RemoteDb extends Db {
 
     public class RemoteDBConnectionState extends DbConnectionState {
 
+        private final AtomicInteger nextId = new AtomicInteger(0);
+
+        public SimpleCsvFileWriter files[];
+        public LdbcSnbInteractiveWorkload workload = new LdbcSnbInteractiveWorkload();
+
+        // Thread local variable containing each thread's ID
+        public final ThreadLocal<Integer> threadId =
+                new ThreadLocal<Integer>() {
+                    @Override protected Integer initialValue() {
+                        Integer init = nextId.getAndIncrement();
+                        try{
+                            files[init] = new SimpleCsvFileWriter(new File("driver_validation_" + init + ".csv"), SimpleCsvFileWriter.DEFAULT_COLUMN_SEPARATOR);
+                        }
+                        catch(Exception e) {
+                            e.printStackTrace();
+                        }
+                        return init;
+                    }
+                };
+
         private RemoteDBConnectionState() {
+
+            files = new SimpleCsvFileWriter[1000];
+            for(int i = 0; i < 1000; ++i)
+            {
+               files[i] = null;
+            }
         }
 
         @Override
         public void close() {
+            for(int i = 0; i < 1000; ++i) {
+                if (files[i] != null)
+                {
+                    try {
+                        files[i].close();
+                    } catch(Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
         }
     }
 
@@ -181,6 +224,24 @@ public class RemoteDb extends Db {
       private String json;
     }
 
+    public static void writeValidation(Operation operation, RemoteDBConnectionState connection, Object result)
+    {
+        List<ValidationParam> params = new ArrayList<ValidationParam>();
+        params.add(ValidationParam.createTyped(operation, result));
+        ValidationParamsToCsvRows rowsIter = new ValidationParamsToCsvRows(params.iterator(), connection.workload, false);
+        int fileId = connection.threadId.get();
+        while(rowsIter.hasNext())
+        {
+            String row[] = rowsIter.next();
+            try {
+                connection.files[fileId].writeRow(row);
+            }catch(Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+
 
     public static class LdbcQuery1Sparksee implements OperationHandler<LdbcQuery1, RemoteDBConnectionState> {
         
@@ -188,7 +249,9 @@ public class RemoteDb extends Db {
        	public void executeOperation(LdbcQuery1 operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
 		try {
 			String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-			resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToQuery1(result), operation);
+			ArrayList<LdbcQuery1Result> qresults = LDBCppQueryTranslator.translateToQuery1(result);
+			resultReporter.report(CODE_OK, qresults, operation);
+            writeValidation(operation, dbConnectionState, qresults);
 		} catch(Exception e){
 			System.err.println(e.getMessage());
 			String result = "{\"ERROR\":\"ERROR\"}";
@@ -202,15 +265,17 @@ public class RemoteDb extends Db {
 
         @Override
         public void executeOperation(LdbcQuery2 operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToQuery2(result), operation);
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-			resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery2(result), operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                List<LdbcQuery2Result> qresults = LDBCppQueryTranslator.translateToQuery2(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery2(result), operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -220,7 +285,9 @@ try{
         public void executeOperation(LdbcQuery3 operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
 		try{
             String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToQuery3(result), operation);
+            List<LdbcQuery3Result> qresults = LDBCppQueryTranslator.translateToQuery3(result);
+            resultReporter.report(CODE_OK, qresults, operation);
+            writeValidation(operation, dbConnectionState, qresults);
 		} catch(Exception e){
 			System.err.println(e.getMessage());
 			String result = "{\"ERROR\":\"ERROR\"}";
@@ -236,8 +303,9 @@ try{
         public void executeOperation(LdbcQuery4 operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
 		try{
             String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToQuery4(result), operation);
-
+            List<LdbcQuery4Result> qresults = LDBCppQueryTranslator.translateToQuery4(result);
+            resultReporter.report(CODE_OK, qresults, operation);
+            writeValidation(operation, dbConnectionState, qresults);
 		} catch(Exception e){
 			System.err.println(e.getMessage());
 			String result = "{\"ERROR\":\"ERROR\"}";
@@ -251,49 +319,53 @@ try{
 
         @Override
         public void executeOperation(LdbcQuery5 operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try {
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToQuery5(result), operation);
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-            resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery5(result), operation);
-			throw new DbException();
-		}
+            try {
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                List<LdbcQuery5Result> qresults = LDBCppQueryTranslator.translateToQuery5(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery5(result), operation);
+                throw new DbException();
+            }
         }
     }
 
     public static class LdbcQuery6Sparksee implements OperationHandler<LdbcQuery6, RemoteDBConnectionState> {
-        
+
         @Override
         public void executeOperation(LdbcQuery6 operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try {
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToQuery6(result), operation);
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-            resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery6(result), operation);
-			throw new DbException();
-		}
+            try {
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                List<LdbcQuery6Result> qresults = LDBCppQueryTranslator.translateToQuery6(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery6(result), operation);
+                throw new DbException();
+            }
         }
     }
 
     public static class LdbcQuery7Sparksee implements OperationHandler<LdbcQuery7, RemoteDBConnectionState> {
-        
+
         @Override
         public void executeOperation(LdbcQuery7 operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-		ArrayList<LdbcQuery7Result> res = LDBCppQueryTranslator.translateToQuery7(result);
-            resultReporter.report(res.size(), res , operation);
-
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-			resultReporter.report(CODE_ERROR, new ArrayList<LdbcQuery7Result>() , operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                ArrayList<LdbcQuery7Result> res = LDBCppQueryTranslator.translateToQuery7(result);
+                resultReporter.report(res.size(), res , operation);
+                writeValidation(operation, dbConnectionState, res);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, new ArrayList<LdbcQuery7Result>() , operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -301,16 +373,17 @@ try{
 
         @Override
         public void executeOperation(LdbcQuery8 operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToQuery8(result), operation);
-
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-			resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery8(result), operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                List<LdbcQuery8Result> qresults = LDBCppQueryTranslator.translateToQuery8(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery8(result), operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -318,32 +391,36 @@ try{
 
         @Override
         public void executeOperation(LdbcQuery9 operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToQuery9(result), operation);
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                List<LdbcQuery9Result> qresults = LDBCppQueryTranslator.translateToQuery9(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
 
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-			resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery9(result), operation);
-			throw new DbException();
-		}
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery9(result), operation);
+                throw new DbException();
+            }
         }
     }
 
     public static class LdbcQuery10Sparksee implements OperationHandler<LdbcQuery10, RemoteDBConnectionState> {
-        
+
         @Override
         public void executeOperation(LdbcQuery10 operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToQuery10(result), operation);
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-			resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery10(result), operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                List<LdbcQuery10Result> qresults = LDBCppQueryTranslator.translateToQuery10(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery10(result), operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -351,80 +428,87 @@ try{
 
         @Override
         public void executeOperation(LdbcQuery11 operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToQuery11(result), operation);
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-			resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery11(result), operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                List<LdbcQuery11Result> qresults = LDBCppQueryTranslator.translateToQuery11(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery11(result), operation);
+                throw new DbException();
+            }
         }
     }
 
     public static class LdbcQuery12Sparksee implements OperationHandler<LdbcQuery12, RemoteDBConnectionState> {
-         
+
         @Override
         public void executeOperation(LdbcQuery12 operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToQuery12(result), operation);
-
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-            resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery12(result), operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                List<LdbcQuery12Result> qresults = LDBCppQueryTranslator.translateToQuery12(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery12(result), operation);
+                throw new DbException();
+            }
         }
     }
-    
+
     public static class LdbcQuery13Sparksee implements OperationHandler<LdbcQuery13, RemoteDBConnectionState> {
-        
+
         @Override
         public void executeOperation(LdbcQuery13 operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToQuery13(result), operation);
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-            resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery13(result), operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                LdbcQuery13Result qresults = LDBCppQueryTranslator.translateToQuery13(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery13(result), operation);
+                throw new DbException();
+            }
         }
     }
-    
+
     public static class LdbcQuery14Sparksee implements OperationHandler<LdbcQuery14, RemoteDBConnectionState> {
-        
+
         @Override
         public void executeOperation(LdbcQuery14 operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToQuery14(result), operation);
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-            resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery14(result), operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                List<LdbcQuery14Result> qresults = LDBCppQueryTranslator.translateToQuery14(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToQuery14(result), operation);
+                throw new DbException();
+            }
         }
     }
-    
-    
+
+
     public static class LdbcUpdate1AddPersonSparksee implements OperationHandler<LdbcUpdate1AddPerson, RemoteDBConnectionState> {
 
         @Override
         public void executeOperation(LdbcUpdate1AddPerson operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK,  LdbcNoResult.INSTANCE , operation); 
-		} catch(Exception e){
-            e.printStackTrace();
-            resultReporter.report(CODE_ERROR,  LdbcNoResult.INSTANCE , operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                resultReporter.report(CODE_OK,  LdbcNoResult.INSTANCE , operation);
+            } catch(Exception e){
+                e.printStackTrace();
+                resultReporter.report(CODE_ERROR,  LdbcNoResult.INSTANCE , operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -447,15 +531,15 @@ try{
 
         @Override
         public void executeOperation(LdbcUpdate3AddCommentLike operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK,  LdbcNoResult.INSTANCE , operation); 
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                resultReporter.report(CODE_OK,  LdbcNoResult.INSTANCE , operation);
 
-		} catch(Exception e){
-            e.printStackTrace();
-			resultReporter.report(CODE_ERROR,  LdbcNoResult.INSTANCE , operation);
-			throw new DbException();
-		}
+            } catch(Exception e){
+                e.printStackTrace();
+                resultReporter.report(CODE_ERROR,  LdbcNoResult.INSTANCE , operation);
+                throw new DbException();
+            }
 
         }
     }
@@ -464,15 +548,15 @@ try{
 
         @Override
         public void executeOperation(LdbcUpdate4AddForum operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK,  LdbcNoResult.INSTANCE , operation); 
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                resultReporter.report(CODE_OK,  LdbcNoResult.INSTANCE , operation);
 
-		} catch(Exception e){
-            e.printStackTrace();
-			resultReporter.report(CODE_ERROR,  LdbcNoResult.INSTANCE , operation);
-			throw new DbException();
-		}
+            } catch(Exception e){
+                e.printStackTrace();
+                resultReporter.report(CODE_ERROR,  LdbcNoResult.INSTANCE , operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -480,14 +564,14 @@ try{
 
         @Override
         public void executeOperation(LdbcUpdate5AddForumMembership operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK,  LdbcNoResult.INSTANCE , operation);
-		} catch(Exception e){
-            e.printStackTrace();
-			resultReporter.report(CODE_ERROR,  LdbcNoResult.INSTANCE , operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                resultReporter.report(CODE_OK,  LdbcNoResult.INSTANCE , operation);
+            } catch(Exception e){
+                e.printStackTrace();
+                resultReporter.report(CODE_ERROR,  LdbcNoResult.INSTANCE , operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -495,14 +579,14 @@ try{
 
         @Override
         public void executeOperation(LdbcUpdate6AddPost operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK,  LdbcNoResult.INSTANCE , operation);
-		} catch(Exception e){
-            e.printStackTrace();
-			resultReporter.report(CODE_ERROR,  LdbcNoResult.INSTANCE , operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                resultReporter.report(CODE_OK,  LdbcNoResult.INSTANCE , operation);
+            } catch(Exception e){
+                e.printStackTrace();
+                resultReporter.report(CODE_ERROR,  LdbcNoResult.INSTANCE , operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -510,14 +594,14 @@ try{
 
         @Override
         public void executeOperation(LdbcUpdate7AddComment operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK,  LdbcNoResult.INSTANCE , operation);
-		} catch(Exception e){
-            e.printStackTrace();
-			resultReporter.report(CODE_ERROR,  LdbcNoResult.INSTANCE , operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                resultReporter.report(CODE_OK,  LdbcNoResult.INSTANCE , operation);
+            } catch(Exception e){
+                e.printStackTrace();
+                resultReporter.report(CODE_ERROR,  LdbcNoResult.INSTANCE , operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -525,14 +609,14 @@ try{
 
         @Override
         public void executeOperation(LdbcUpdate8AddFriendship operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK,  LdbcNoResult.INSTANCE , operation);
-		} catch(Exception e){
-            e.printStackTrace();
-			resultReporter.report(CODE_ERROR,  LdbcNoResult.INSTANCE , operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                resultReporter.report(CODE_OK,  LdbcNoResult.INSTANCE , operation);
+            } catch(Exception e){
+                e.printStackTrace();
+                resultReporter.report(CODE_ERROR,  LdbcNoResult.INSTANCE , operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -540,15 +624,17 @@ try{
 
         @Override
         public void executeOperation(LdbcShortQuery1PersonProfile operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToShort1(result), operation);
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-            resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToShort1(result), operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                LdbcShortQuery1PersonProfileResult qresults = LDBCppQueryTranslator.translateToShort1(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToShort1(result), operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -556,15 +642,17 @@ try{
 
         @Override
         public void executeOperation(LdbcShortQuery2PersonPosts operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-	try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToShort2(result), operation);
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-            resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToShort2(result), operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                List<LdbcShortQuery2PersonPostsResult> qresults = LDBCppQueryTranslator.translateToShort2(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToShort2(result), operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -572,15 +660,17 @@ try{
 
         @Override
         public void executeOperation(LdbcShortQuery3PersonFriends operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-	try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToShort3(result), operation);
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-            resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToShort3(result), operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                List<LdbcShortQuery3PersonFriendsResult> qresults = LDBCppQueryTranslator.translateToShort3(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToShort3(result), operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -588,15 +678,17 @@ try{
 
         @Override
         public void executeOperation(LdbcShortQuery4MessageContent operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToShort4(result), operation);
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-            resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToShort4(result), operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                LdbcShortQuery4MessageContentResult qresults = LDBCppQueryTranslator.translateToShort4(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToShort4(result), operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -604,22 +696,24 @@ try{
 
         @Override
         public void executeOperation(LdbcShortQuery5MessageCreator operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            long start = System.nanoTime();
-    //        byte[] result = socketProcessingByteArray(LDBCppQueryTranslator.translate(operation));
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            //System.out.println("Time query + com:"+(System.nanoTime() - start ) / 1000000.0f);
-            start = System.nanoTime();
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToShort5(result), operation);
-            //System.out.println("Time parse results:"+(System.nanoTime() - start )/ 1000000.0f);
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-			resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToShort5(result), operation);
-            //LdbcShortQuery5MessageCreatorResult result = new LdbcShortQuery5MessageCreatorResult(0, "", "");
-            //resultReporter.report(CODE_ERROR, result, operation);
-			throw new DbException();
-		}
+            try{
+                long start = System.nanoTime();
+                //        byte[] result = socketProcessingByteArray(LDBCppQueryTranslator.translate(operation));
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                //System.out.println("Time query + com:"+(System.nanoTime() - start ) / 1000000.0f);
+                start = System.nanoTime();
+                LdbcShortQuery5MessageCreatorResult qresults = LDBCppQueryTranslator.translateToShort5(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+                //System.out.println("Time parse results:"+(System.nanoTime() - start )/ 1000000.0f);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToShort5(result), operation);
+                //LdbcShortQuery5MessageCreatorResult result = new LdbcShortQuery5MessageCreatorResult(0, "", "");
+                //resultReporter.report(CODE_ERROR, result, operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -627,15 +721,17 @@ try{
 
         @Override
         public void executeOperation(LdbcShortQuery6MessageForum operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToShort6(result), operation);
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-			resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToShort6(result), operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                LdbcShortQuery6MessageForumResult qresults = LDBCppQueryTranslator.translateToShort6(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToShort6(result), operation);
+                throw new DbException();
+            }
         }
     }
 
@@ -643,15 +739,17 @@ try{
 
         @Override
         public void executeOperation(LdbcShortQuery7MessageReplies operation, RemoteDBConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
-		try{
-            String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
-            resultReporter.report(CODE_OK, LDBCppQueryTranslator.translateToShort7(result), operation);
-		} catch(Exception e){
-			System.err.println(e.getMessage());
-			String result = "{\"ERROR\":\"ERROR\"}";
-			resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToShort7(result), operation);
-			throw new DbException();
-		}
+            try{
+                String result = socketProcessing(LDBCppQueryTranslator.translate(operation));
+                List<LdbcShortQuery7MessageRepliesResult> qresults = LDBCppQueryTranslator.translateToShort7(result);
+                resultReporter.report(CODE_OK, qresults, operation);
+                writeValidation(operation, dbConnectionState, qresults);
+            } catch(Exception e){
+                System.err.println(e.getMessage());
+                String result = "{\"ERROR\":\"ERROR\"}";
+                resultReporter.report(CODE_ERROR, LDBCppQueryTranslator.translateToShort7(result), operation);
+                throw new DbException();
+            }
         }
     }
 
