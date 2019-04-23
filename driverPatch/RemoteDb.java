@@ -40,6 +40,11 @@ public class RemoteDb extends Db {
         //host = "147.83.35.200";
         host = properties.get("sparksee.host");
         port = 9998;
+
+        if(properties.get("sparksee.writeValidation") != null)
+        {
+            remoteDBConnectionState.writeValidation = true;
+        }
         
         registerOperationHandler(LdbcQuery1.class,  LdbcQuery1Sparksee.class);
         registerOperationHandler(LdbcQuery2.class,  LdbcQuery2Sparksee.class);
@@ -115,6 +120,7 @@ public class RemoteDb extends Db {
 
         private final AtomicInteger nextId = new AtomicInteger(0);
 
+        public boolean writeValidation = false;
         public SimpleCsvFileWriter files[];
         public LdbcSnbInteractiveWorkload workload = new LdbcSnbInteractiveWorkload();
 
@@ -226,18 +232,18 @@ public class RemoteDb extends Db {
 
     public static void writeValidation(Operation operation, RemoteDBConnectionState connection, Object result)
     {
-        List<ValidationParam> params = new ArrayList<ValidationParam>();
-        params.add(ValidationParam.createTyped(operation, result));
-        ValidationParamsToCsvRows rowsIter = new ValidationParamsToCsvRows(params.iterator(), connection.workload, false);
-        int fileId = connection.threadId.get();
-        while(rowsIter.hasNext())
-        {
-            String row[] = rowsIter.next();
-            try {
-                connection.files[fileId].writeRow(row);
-            }catch(Exception e)
-            {
-                e.printStackTrace();
+        if(connection.writeValidation) {
+            List<ValidationParam> params = new ArrayList<ValidationParam>();
+            params.add(ValidationParam.createTyped(operation, result));
+            ValidationParamsToCsvRows rowsIter = new ValidationParamsToCsvRows(params.iterator(), connection.workload, false);
+            int fileId = connection.threadId.get();
+            while (rowsIter.hasNext()) {
+                String row[] = rowsIter.next();
+                try {
+                    connection.files[fileId].writeRow(row);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
