@@ -191,7 +191,7 @@ fi
 OUTPUT_FILE_BASE_NAME=execution_${SCALE_FACTOR}_${SERVER_N_THREADS}_${DRIVER_N_THREADS}
 
 ######################## PRINTING BENCHMARK CONFIG ##################################
-rm ${OUTPUT_FILE_BASE_NAME}.config
+rm -f ${OUTPUT_FILE_BASE_NAME}.config
 echo "scale_factor=$SCALE_FACTOR" >> ${OUTPUT_FILE_BASE_NAME}.config
 echo "tag=$TAG" >> ${OUTPUT_FILE_BASE_NAME}.config
 echo "driver_threads=$DRIVER_N_THREADS" >> ${OUTPUT_FILE_BASE_NAME}.config
@@ -215,7 +215,7 @@ $DRIVER_IGNORE_TCR"
 
 if [[ -a $DATABASE_WORKSPACE_DIR/$TAG/$IMAGE_NAME ]]
 then
-	rm $DATABASE_WORKSPACE_DIR/$TAG/$IMAGE_NAME*
+	rm -f $DATABASE_WORKSPACE_DIR/$TAG/$IMAGE_NAME*
 fi
 
 if [[ -z $DATABASE_SOURCE_DIR/$TAG/$IMAGE_NAME  ]]
@@ -260,7 +260,7 @@ then
 	cp ./results/LDBC-results_log.csv ${OUTPUT_FILE_BASE_NAME}.log
 	python2 $SERVER_DIR/scripts/shutdownServer.py $SPARKSEE_HOST
 	mkdir -p ./results/$SCALE_FACTOR/$TAG/
-	mv execution* ./results/$SCALE_FACTOR/$TAG/
+	mv -f execution* ./results/$SCALE_FACTOR/$TAG/
 fi
 
 if [[ -z $NO_SERVER ]]
@@ -268,5 +268,7 @@ then
 	mkdir -p ./results/$SCALE_FACTOR/$TAG/
   cp sparksee.cfg ./results/$SCALE_FACTOR/$TAG/${OUTPUT_FILE_BASE_NAME}.sparksee.cfg
   cp sparksee.log ./results/$SCALE_FACTOR/$TAG/${OUTPUT_FILE_BASE_NAME}.sparksee.log
-	mv execution* ./results/$SCALE_FACTOR/$TAG/
+	mv -f execution* ./results/$SCALE_FACTOR/$TAG/
 fi
+
+exit 0;
