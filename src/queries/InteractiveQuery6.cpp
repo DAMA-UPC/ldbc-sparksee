@@ -108,8 +108,8 @@ datatypes::Buffer Execute(gdb::Session *sess, long long person_id,
             delete iter_tags;
             delete tags;
         }
-        delete post_tags;
         delete iter_posts;
+        delete post_tags;
         delete friend_posts;
     }
     delete posts_with_tag;
