@@ -11,6 +11,6 @@ where
 	head id2=place.id
 fields terminated |
 from 1
-log "place_isPartOf_place.csv.log"
+log ABORT
 
 

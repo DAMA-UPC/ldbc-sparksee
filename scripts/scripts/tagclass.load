@@ -6,4 +6,4 @@ columns id, name, url
 into tagclass
 fields terminated |
 from 1
-log "tagclass_0_0.csv.log"
+log ABORT

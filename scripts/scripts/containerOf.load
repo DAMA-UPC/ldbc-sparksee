@@ -10,4 +10,4 @@ where
 	head id2=post.id
 fields terminated |
 from 1
-log "forum_containerOf_post.csv.log"
+log ABORT 

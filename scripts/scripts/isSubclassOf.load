@@ -3,11 +3,11 @@ open gdb "snb" into "./snb.gdb"
 
 load edges "tagclass_isSubclassOf_tagclass_0_0.csv"
 columns id1, id2
-into knows 
+into isSubclassOf 
 ignore id1, id2
 where
 	tail id1=tagclass.id
 	head id2=tagclass.id
 fields terminated |
 from 1
-log "tagclass_isSubclassOf_tagclass_0_0.csv.log"
+log ABORT

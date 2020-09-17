@@ -10,4 +10,4 @@ where
 	head emailaddress=emailaddress.emailaddress
 fields terminated |
 from 1
-log "./person_email_emailaddress_0_0.csv.log"
+log ABORT 

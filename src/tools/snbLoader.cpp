@@ -614,7 +614,7 @@ int RunEdges(std::vector<std::string> &tokens, int line) {
            reader->Open(s.c_str());
 
            EdgeTypeLoader *loader = new EdgeTypeLoader(*reader, *graph, type, attrs,
-                   columns, dc, sc, a2, a1, false, false);
+                   columns, dc, sc, a2, a1, IsError, IsError);
            //loader->SetTimestampFormat(L"yyyy-MM-dd hh:mm:ss.SSS");
            loader->SetTimestampFormat(L"yyyy-MM-ddThh:mm:ss.SSS+0000");
            loader->Run();

@@ -6,4 +6,4 @@ columns id, type, name, url
 into organisation 
 fields terminated |
 from 1
-log "organisation_0_0.csv.log"
+log ABORT

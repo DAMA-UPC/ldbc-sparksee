@@ -10,7 +10,7 @@ where
 	head id2=tag.id
 fields terminated |
 from 1
-log "forum_hasTag_tag_0_0.csv.log"
+log ABORT
 
 load edges "post_hasTag_tag_0_0.csv"
 columns id1, id2
@@ -21,7 +21,7 @@ where
 	head id2=tag.id
 fields terminated |
 from 1
-log "post_hasTag_tag_0_0.csv.log"
+log ABORT
 
 load edges "comment_hasTag_tag_0_0.csv"
 columns id1, id2
@@ -32,4 +32,4 @@ where
 	head id2=tag.id
 fields terminated |
 from 1
-log "comment_hasTag_tag_0_0.csv.log"
+log ABORT

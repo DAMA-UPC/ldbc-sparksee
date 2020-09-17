@@ -6,4 +6,4 @@ columns id, imageFile, creationDate, locationIP, browserUsed, content, length
 into post
 fields terminated |
 from 1
-log "post_0_0.csv.log"
+log ABORT

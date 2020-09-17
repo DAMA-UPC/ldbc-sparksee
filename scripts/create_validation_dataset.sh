@@ -3,19 +3,20 @@
 
 DATA_DIR=$1
 WORKSPACE_DIR="/tmp/"
-LDBCPP_DIR=/home/aprat/projects/LDBCpp/trunk
+LDBCPP_DIR=/home/aprat/projects/ldbc-sparksee
 LDBCPPBUILD_DIR=$LDBCPP_DIR/build
 DRIVER_DIR=./ldbc_driver
 OUTPUT_DIR=./output_validation
 #WORKLOAD=com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcSnbInteractiveWorkload
 WORKLOAD=com.ldbc.driver.workloads.ldbc.snb.bi.LdbcSnbBiWorkload
+SPARKSEE_HOST="localhost"
 
 
 SPARKSEE_LICENSE=$(cat sparksee.cfg | grep "license" | cut -d'=' -f 2)
 
 
 if [[ -z "$LDBCPP_DIR" ]] || [[ -z "$LDBCPPBUILD_DIR" ]] || [[ -z "$DATA_DIR" ]]; then
-  echo "LDBCPP PROJECT or DATA_DIR VARIABLES NOT SET "
+  echo "LDBCPP_DIR or LDBCPPBUILD_DIR or DATA_DIR VARIABLES NOT SET "
   exit
 fi
 
@@ -33,8 +34,7 @@ cp -r $DATA_DIR/substitution_parameters/* $WORKSPACE_DIR/validation_set
 
 UPDATES_DATA=$(cat $WORKSPACE_DIR/validation_set/updateStream.properties)
 
-WORKLOAD_PROPERTIES_FILE=./ldbc_driver/configuration/ldbc/snb/bi/ldbc_snb_bi_SF-0001.properties
-#WORKLOAD_PROPERTIES_FILE=./ldbc_snb_interactive.properties
+WORKLOAD_PROPERTIES_FILE=$DRIVER_DIR/src/main/resources/configuration/ldbc/snb/interactive/ldbc_snb_interactive_SF-0001.properties
 WORKLOAD_PROPERTIES=$(cat $WORKLOAD_PROPERTIES_FILE)
 
 echo "
@@ -281,11 +281,11 @@ cp $LDBCPP_DIR/scripts/load_data.sh ./
 
 $LDBCPPBUILD_DIR/server -q remote --threads 1 -t shortestjobfirst > create_validation.server &
 
-java -cp $DRIVER_DIR/target/jeeves-0.3-SNAPSHOT.jar com.ldbc.driver.Client -P $WORKSPACE_DIR/readwrite_sparksee--ldbc_driver_config--validation_parameter_creation.properties > create_validation.driver &
+java -cp $DRIVER_DIR/target/jeeves-standalone.jar com.ldbc.driver.Client -P $WORKSPACE_DIR/readwrite_sparksee--ldbc_driver_config--validation_parameter_creation.properties > create_validation.driver &
 
 DRIVER_PID=$!
 wait $DRIVER_PID
-python $LDBCPP_DIR/scripts/shutdownServer.py
+python $LDBCPP_DIR/scripts/shutdownServer.py $SPARKSEE_HOST
 
 cp $WORKSPACE_DIR/*.properties $OUTPUT_DIR
 cp -r $WORKSPACE_DIR/validation_set $OUTPUT_DIR

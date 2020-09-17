@@ -1,70 +1,72 @@
+#!/bin/bash
+set -e
 
 function print_separator {
 	echo "****************************************"
 }
 
 print_separator
-$1/build/script_loader $1/data/scripts/snb.schema
+time $1/build/script_loader $1/scripts/scripts/snb.schema
 print_separator
-$1/build/script_loader $1/data/scripts/person.load
+time $1/build/script_loader $1/scripts/scripts/person.load
 print_separator
-$1/build/script_loader $1/data/scripts/place.load
+time $1/build/script_loader $1/scripts/scripts/place.load
 print_separator
-$1/build/script_loader $1/data/scripts/organisation.load
+time $1/build/script_loader $1/scripts/scripts/organisation.load
 print_separator
-$1/build/script_loader $1/data/scripts/tagclass.load
+time $1/build/script_loader $1/scripts/scripts/tagclass.load
 print_separator
-$1/build/script_loader $1/data/scripts/tag.load
+time $1/build/script_loader $1/scripts/scripts/tag.load
 print_separator
-$1/build/script_loader $1/data/scripts/forum.load
+time $1/build/script_loader $1/scripts/scripts/forum.load
 print_separator
-$1/build/script_loader $1/data/scripts/post.load
+time $1/build/script_loader $1/scripts/scripts/post.load
 print_separator
-$1/build/script_loader $1/data/scripts/comment.load
+time $1/build/script_loader $1/scripts/scripts/comment.load
 print_separator
-$1/build/script_loader $1/data/scripts/knows.load
+time $1/build/script_loader $1/scripts/scripts/knows.load
 print_separator
-$1/build/script_loader $1/data/scripts/isPartOf.load
+time $1/build/script_loader $1/scripts/scripts/isPartOf.load
 print_separator
-$1/build/script_loader $1/data/scripts/isLocatedIn.load
+time $1/build/script_loader $1/scripts/scripts/isLocatedIn.load
 print_separator
-$1/build/script_loader $1/data/scripts/studyAt.load
+time $1/build/script_loader $1/scripts/scripts/studyAt.load
 print_separator
-$1/build/script_loader $1/data/scripts/workAt.load
+time $1/build/script_loader $1/scripts/scripts/workAt.load
 print_separator
-$1/build/script_loader $1/data/scripts/hasType.load
+time $1/build/script_loader $1/scripts/scripts/hasType.load
 print_separator
-$1/build/script_loader $1/data/scripts/isSubclassOf.load
+time $1/build/script_loader $1/scripts/scripts/isSubclassOf.load
 print_separator
-$1/build/script_loader $1/data/scripts/hasInterest.load
+time $1/build/script_loader $1/scripts/scripts/hasInterest.load
 print_separator
-$1/build/script_loader $1/data/scripts/hasMember.load
+time $1/build/script_loader $1/scripts/scripts/hasMember.load
 print_separator
-$1/build/script_loader $1/data/scripts/hasMemberWithPosts.load
+time $1/build/script_loader $1/scripts/scripts/hasMemberWithPosts.load
 print_separator
-$1/build/script_loader $1/data/scripts/hasModerator.load
+time $1/build/script_loader $1/scripts/scripts/hasModerator.load
 print_separator
-$1/build/script_loader $1/data/scripts/hasTag.load
+time $1/build/script_loader $1/scripts/scripts/hasTag.load
 print_separator
-$1/build/script_loader $1/data/scripts/likes.load
+time $1/build/script_loader $1/scripts/scripts/likes.load
 print_separator
-$1/build/script_loader $1/data/scripts/postHasCreator.load
+time $1/build/script_loader $1/scripts/scripts/postHasCreator.load
 print_separator
-$1/build/script_loader $1/data/scripts/postHasTag.load
+time $1/build/script_loader $1/scripts/scripts/postHasTag.load
 print_separator
-$1/build/script_loader $1/data/scripts/commentHasTag.load
+time $1/build/script_loader $1/scripts/scripts/commentHasTag.load
 print_separator
-$1/build/script_loader $1/data/scripts/containerOf.load
+time $1/build/script_loader $1/scripts/scripts/containerOf.load
 print_separator
-$1/build/script_loader $1/data/scripts/commentHasCreator.load
+time $1/build/script_loader $1/scripts/scripts/commentHasCreator.load
 print_separator
-$1/build/script_loader $1/data/scripts/replyOf.load
+time $1/build/script_loader $1/scripts/scripts/replyOf.load
 print_separator
-$1/build/script_loader $1/data/scripts/emailaddress.load
+time $1/build/script_loader $1/scripts/scripts/emailaddress.load
 print_separator
-$1/build/script_loader $1/data/scripts/email.load
+time $1/build/script_loader $1/scripts/scripts/email.load
 print_separator
-$1/build/script_loader $1/data/scripts/language.load
+time $1/build/script_loader $1/scripts/scripts/language.load
 print_separator
-$1/build/script_loader $1/data/scripts/speaks.load
+time $1/build/script_loader $1/scripts/scripts/speaks.load
 print_separator

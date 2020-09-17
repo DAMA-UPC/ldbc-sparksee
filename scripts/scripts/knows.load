@@ -10,4 +10,4 @@ where
 	head id2=person.id
 fields terminated |
 from 1
-log "person_knows_person_0_0.csv.log"
+log ABORT

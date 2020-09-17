@@ -6,4 +6,4 @@ columns id, creationDate, locationIP, browserUsed, content, length
 into comment 
 fields terminated |
 from 1
-log "comment_0_0.csv.log" 
+log ABORT 

@@ -6,4 +6,4 @@ columns language
 into language 
 fields terminated |
 from 0
-log "./language_0_0.csv.log"
+log ABORT

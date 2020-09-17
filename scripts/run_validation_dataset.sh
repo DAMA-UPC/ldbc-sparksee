@@ -4,6 +4,7 @@
 DRIVER_WORKLOAD=com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcSnbInteractiveWorkload
 DRIVER_DATABASE_CONNECTOR=com.ldbc.driver.sparksee.workloads.ldbc.snb.interactive.db.RemoteDb
 WORKLOAD=com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcSnbInteractiveWorkload
+SPARKSEE_HOST="localhost"
 
 while [[ $# > 0 ]]
 do
@@ -64,20 +65,15 @@ fi
 
 rm -r $WORKSPACE_DIR/validation_set
 mkdir -p $WORKSPACE_DIR/validation_set
-#cp -r $DATA_DIR/social_network/string_date/* $WORKSPACE_DIR/validation_set
-#cp -r $DATA_DIR/substitution_parameters/* $WORKSPACE_DIR/validation_set
-#cp -r $DATA_DIR/validation_params.csv $WORKSPACE_DIR/validation_set
-#cp -r $DATA_DIR/updates/* $WORKSPACE_DIR/validation_set
-
 cp -r $DATA_DIR/* $WORKSPACE_DIR/validation_set
 
 
-$LDBCPP_DIR/data/load_data.sh $WORKSPACE_DIR/validation_set/ 1 1 $LDBCPP_DIR $LDBCPPBUILD_DIR
+$LDBCPP_DIR/scripts/load_data.sh $WORKSPACE_DIR/validation_set/ 1 1 $LDBCPP_DIR $LDBCPPBUILD_DIR
 
 $LDBCPPBUILD_DIR/server -q remote --threads 1 -t shortestjobfirst > run_validation.server &
 
-java -cp $DRIVER_DIR/target/jeeves-0.3-SNAPSHOT.jar com.ldbc.driver.Client -P $WORKLOAD_PROPERTIES_FILE -p ldbc.snb.interactive.parameters_dir $WORKSPACE_DIR/validation_set --validate_database $WORKSPACE_DIR/validation_set/validation_params.csv -w $DRIVER_WORKLOAD -db $DRIVER_DATABASE_CONNECTOR > run_validation.driver &
+java -cp $DRIVER_DIR/target/jeeves-standalone.jar com.ldbc.driver.Client -P $WORKLOAD_PROPERTIES_FILE -p ldbc.snb.interactive.parameters_dir $WORKSPACE_DIR/validation_set --validate_database $WORKSPACE_DIR/validation_set/validation_params.csv -w $DRIVER_WORKLOAD -db $DRIVER_DATABASE_CONNECTOR > run_validation.driver &
 
 DRIVER_PID=$!
 wait $DRIVER_PID
-python $LDBCPP_DIR/data/shutdownServer.py
+python $LDBCPP_DIR/scripts/shutdownServer.py $SPARKSEE_HOST

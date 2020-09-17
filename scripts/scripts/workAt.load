@@ -10,4 +10,4 @@ where
 	head id2=organisation.id
 fields terminated |
 from 1
-log "person_workAt_organisation_0_0.csv.log"
+log ABORT

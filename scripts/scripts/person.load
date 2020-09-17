@@ -6,4 +6,4 @@ columns id, firstName, lastName, gender, birthday, creationDate, locationIP, bro
 into person
 fields terminated |
 from 1
-log "person_0_0.csv.log"
+log ABORT 

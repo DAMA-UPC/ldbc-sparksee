@@ -10,7 +10,7 @@ where
 	head id2=post.id
 fields terminated |
 from 1
-log "person_likes_post_0_0.csv.log"
+log ABORT
 
 load edges "person_likes_comment_0_0.csv"
 columns id1, id2, creationDate
@@ -21,4 +21,4 @@ where
 	head id2=comment.id
 fields terminated |
 from 1
-log "person_likes_comment_0_0.csv.log"
+log ABORT

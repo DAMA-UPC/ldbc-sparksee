@@ -10,7 +10,7 @@ where
 	head id2=place.id
 fields terminated |
 from 1
-log "person_isLocatedIn_place_0_0.csv.log"
+log ABORT
 
 load edges "organisation_isLocatedIn_place_0_0.csv"
 columns id1, id2
@@ -21,7 +21,7 @@ where
 	head id2=place.id
 fields terminated |
 from 1
-log "organisation_isLocatedIn_place_0_0.csv.log"
+log ABORT
 
 load edges "post_isLocatedIn_place_0_0.csv"
 columns id1, id2
@@ -32,7 +32,7 @@ where
 	head id2=place.id
 fields terminated |
 from 1
-log "post_isLocatedIn_place_0_0.csv.log"
+log ABORT
 
 load edges "comment_isLocatedIn_place_0_0.csv"
 columns id1, id2
@@ -43,6 +43,6 @@ where
 	head id2=place.id
 fields terminated |
 from 1
-log "comment_isLocatedIn_place_0_0.csv.log"
+log ABORT
 
 

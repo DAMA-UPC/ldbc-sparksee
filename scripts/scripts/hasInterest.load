@@ -10,4 +10,4 @@ where
 	head id2=tag.id
 fields terminated |
 from 1
-log "person_hasInterest_tag_0_0.csv.log"
+log ABORT 

@@ -27,7 +27,7 @@ void set_thread_affinity(std::vector<std::thread>& threads) {
     unsigned int core_id = cores[i%num_cores]; 
     CPU_SET(core_id, &cpuset);
 
-    printf("thread %u assigned to core %u \n",i,core_id);
+    //printf("thread %u assigned to core %u \n",i,core_id);
     pthread_setaffinity_np(threads[i].native_handle(), sizeof(cpu_set_t), &cpuset);
   }
   delete []cores;
