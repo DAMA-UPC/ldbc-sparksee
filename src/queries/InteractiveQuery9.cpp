@@ -70,7 +70,7 @@ namespace interactive {
             pt.put<long long>("Message.id", result.message_id );
             gdb::attr_t content_attr = result.type == cache.post_t ? cache.post_content_t : cache.comment_content_t;;
             nc_graph.GetAttribute(result.message_oid, content_attr, val);
-            if( val.IsNull() ) {
+            if( val.IsNull() || (!val.IsNull() && val.GetString().length() == 0)) {
                 nc_graph.GetAttribute(result.message_oid, cache.post_image_file_t, val);
             }
             pt.put<std::string>("Message.content", sparksee::utils::to_string(val.GetString()));

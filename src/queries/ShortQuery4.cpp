@@ -73,7 +73,7 @@ namespace interactive {
             }
             Result res;
             graph->GetAttribute(message_oid, content_attr, val);
-            if(val.IsNull()){
+            if(val.IsNull() || (!val.IsNull() && val.GetString().length() == 0)){
                 graph->GetAttribute(message_oid, cache->post_image_file_t, val); 
             }
             res.content = sparksee::utils::to_string(val.GetString());

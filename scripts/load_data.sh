@@ -43,6 +43,10 @@ fi
 cp sparksee.cfg $DATA_DIR/
 cd $DATA_DIR
 
+echo "DATA_DIR="$DATA_DIR
+echo "LDBC_SPARKSEE="$LDBC_SPARKSEE
+echo "LDBC_SPARKSEE_BUILD_DIR="$LDBC_SPARKSEE_BUILD_DIR
+
 #$LDBC_SPARKSEE/scripts/sortFiles.sh comment_isLocatedIn_place_?_?.csv > temp
 #python2 $LDBC_SPARKSEE/scripts/repartitionFiles.py temp comment_isLocatedIn_place $2 $3
 #
@@ -62,11 +66,11 @@ rm temp
 python2 $LDBC_SPARKSEE/scripts/createHasMemberWithPostsCSV.py
 python2 $LDBC_SPARKSEE/scripts/createLanguages.py
 
-cp $LDBC_SPARKSEE/scripts/loader.txt loader.txt.tmp
-sed -i "s/LICENSE_CODE/$SPARKSEE_LICENSE/g" loader.txt.tmp
-sed -i "s#/path/to/data/#$DATA_DIR/#g" loader.txt.tmp
-sed -i "s#set,partitions,1#set,partitions,$NUM_THREADS#g" loader.txt.tmp
-sed -i "s#set,thread_partitions,1#set,thread_partitions,$NUM_PARTITIONS#g" loader.txt.tmp
+#cp $LDBC_SPARKSEE/scripts/loader.txt loader.txt.tmp
+#sed -i "s/LICENSE_CODE/$SPARKSEE_LICENSE/g" loader.txt.tmp
+#sed -i "s#/path/to/data/#$DATA_DIR/#g" loader.txt.tmp
+#sed -i "s#set,partitions,1#set,partitions,$NUM_THREADS#g" loader.txt.tmp
+#sed -i "s#set,thread_partitions,1#set,thread_partitions,$NUM_PARTITIONS#g" loader.txt.tmp
 #$LDBC_SPARKSEE_BUILD_DIR/snbLoaderStandalone loader.txt.tmp
 $LDBC_SPARKSEE/scripts/scripts/load.sh $LDBC_SPARKSEE 
 $LDBC_SPARKSEE_BUILD_DIR/precompute snb.gdb 8

@@ -210,6 +210,7 @@ with document.create(Section("Execution Results")):
 	
 	# Plotting difference between actual and scheduled start times
 	mintime = log.loc[0,"scheduled_start_time"]
+	#mintime = log.loc[0,"actual_start_time"]
 	minutes = timestamp_to_minutes((np.array(log["actual_start_time"]) - mintime)) 
 	
 	reads_minutes = timestamp_to_minutes((np.array(reads["actual_start_time"]) - mintime))
@@ -264,10 +265,17 @@ with document.create(Section("Execution Results")):
 	actual_seconds = (np.array(log["actual_start_time"]) - mintime +
 	                  np.array(log["execution_duration_MILLISECONDS"])) / (1000.0)
 	actual_buckets = np.zeros((int(max(actual_seconds)-min(actual_seconds))/window_size+1))
+        index = 0
 	for row in log.iterrows():
-	    actual_bucket = (int(row[1]["actual_start_time"]) +
-	                     int(row[1]["execution_duration_MILLISECONDS"]) - mintime)/(window_size * 1000)
-	    actual_buckets[actual_bucket] += 1
+            actual_start_time = int(row[1]["actual_start_time"])
+            exec_duration = int(row[1]["execution_duration_MILLISECONDS"])
+	    actual_bucket = ( actual_start_time +
+	                      exec_duration - mintime)/(window_size * 1000)
+            if actual_bucket < 0:
+                print "Possible error at line "+str(index)+". scheduled start time is after actual start time"
+            else:
+                actual_buckets[actual_bucket] += 1
+            index = index + 1
 	
         xdata = np.arange(0,max(actual_seconds)/60.0,window_size/60.0)
 	throughput_handle = par1.plot(xdata,

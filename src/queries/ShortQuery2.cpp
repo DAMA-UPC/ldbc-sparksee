@@ -59,7 +59,8 @@ namespace interactive {
             gdb::type_t type = nc_graph.GetObjectType(result.message_oid);
             if(type == cache.post_t) {
               nc_graph.GetAttribute(result.message_oid,cache.post_content_t, val);
-              if( val.IsNull() ) {
+              if( val.IsNull() || 
+                  (!val.IsNull() && val.GetString().length() == 0)) {
                 nc_graph.GetAttribute(result.message_oid, cache.post_image_file_t, val);
               }
               pt.put<std::string>("Message.content", sparksee::utils::to_string(val.GetString()));

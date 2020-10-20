@@ -67,7 +67,7 @@ namespace interactive {
             pt.put<std::string>("Person.lastName", sparksee::utils::to_string(val.GetString()));
             pt.put<long long>("Message.id", result.message_id );
             nc_graph.GetAttribute( result.message_oid, result.type == kPost ? cache.post_content_t : cache.comment_content_t, val);
-            if( result.type == kPost && val.IsNull() ) {
+            if( result.type == kPost && (val.IsNull() || (!val.IsNull() && val.GetString().length() == 0))) {
                 nc_graph.GetAttribute( result.message_oid, cache.post_image_file_t, val);
             }
             pt.put<std::string>("Message.content", sparksee::utils::to_string(val.GetString()));
