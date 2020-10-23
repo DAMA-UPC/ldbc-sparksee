@@ -3,7 +3,7 @@ package com.ldbc.driver.sparksee.workloads.ldbc.snb.interactive.db;
 
 
 import com.ldbc.driver.*;
-import com.ldbc.driver.workloads.ldbc.snb.bi.*;
+//import com.ldbc.driver.workloads.ldbc.snb.bi.*;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -681,6 +681,8 @@ public class LDBCppQueryTranslator {
         return result;
     }
 
+    /*
+
     public static String translate(LdbcSnbBiQuery1PostingSummary query ) {
         return String.format("{ \"bi%d\" : [{\"date\" : \"%d\"}] }", 1, query.date());
     }
@@ -1211,6 +1213,7 @@ public class LDBCppQueryTranslator {
         }
         return result;
     }
+    */
 
 
 };

@@ -69,6 +69,7 @@ public class RemoteDb extends Db {
         registerOperationHandler(LdbcShortQuery6MessageForum.class,  LdbcShortQuery6MessageForumSparksee.class);
         registerOperationHandler(LdbcShortQuery7MessageReplies.class,  LdbcShortQuery7MessageRepliesSparksee.class);
 
+        /*
         registerOperationHandler(LdbcSnbBiQuery1PostingSummary.class,  LdbcSnbBiQuery1Sparksee.class);
         registerOperationHandler(LdbcSnbBiQuery2TopTags.class,  LdbcSnbBiQuery2Sparksee.class);
         registerOperationHandler(LdbcSnbBiQuery3TagEvolution.class,  LdbcSnbBiQuery3Sparksee.class);
@@ -94,6 +95,7 @@ public class RemoteDb extends Db {
         registerOperationHandler(LdbcSnbBiQuery23HolidayDestinations.class,  LdbcSnbBiQuery23Sparksee.class);
         registerOperationHandler(LdbcSnbBiQuery24MessagesByTopic.class,  LdbcSnbBiQuery24Sparksee.class);
         registerOperationHandler(LdbcSnbBiQuery25WeightedPaths.class,  LdbcSnbBiQuery25Sparksee.class);
+        */
     }
     
     @Override
@@ -655,6 +657,8 @@ try{
         }
     }
 
+    /*
+
     public static class LdbcSnbBiQuery1Sparksee implements OperationHandler<LdbcSnbBiQuery1PostingSummary, RemoteDBConnectionState> {
 
         @Override
@@ -1055,4 +1059,5 @@ try{
             }
         }
     }
+    */
 }

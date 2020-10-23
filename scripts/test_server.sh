@@ -107,6 +107,10 @@ do
 		-nd|--nodriver)
 			NO_DRIVER="yes"
 			;;
+		-rp|--results-path)
+			RESULTS_PATH="$2"
+      shift # past argument
+			;;
 	esac
 	shift
 done
@@ -129,6 +133,7 @@ then
 	echo " -f|--driverworkloadfile path to the workload file" 
 	echo " -b|--bi execute bi workload"
 	echo " -p|--perf execute with perf stat with the counters specified in file"
+	echo " -rp|--results-path path to the results repository" 
 	exit
 fi
 
@@ -207,7 +212,7 @@ DATABASE_SOURCE_DIR=$DATABASE_REPOSITORY_DIR/$SCALE_FACTOR/$TAG
 DRIVER_WORKLOAD_OPTS="-w $DRIVER_WORKLOAD -db $DRIVER_DATABASE_CONNECTOR -p $DRIVER_PARAMETERS_DIR_OPTION
 $DATABASE_SOURCE_DIR/substitution_parameters -p ldbc.snb.interactive.data_dir $DATABASE_SOURCE_DIR/social_network -p
 ldbc.snb.interactive.updates_dir $DATABASE_SOURCE_DIR/social_network "
-DRIVER_OPTS="-s 2 -tc $DRIVER_N_THREADS -nm LDBC -rd results false -tu MILLISECONDS -tcr $DRIVER_TCR -sw 1
+DRIVER_OPTS="-s 2 -tc $DRIVER_N_THREADS -nm LDBC -rd $RESULTS_PATH -tu MILLISECONDS -tcr $DRIVER_TCR -sw 1
 $DRIVER_IGNORE_TCR"
 
 ####################################################################################
@@ -252,23 +257,26 @@ if [[ -z $NO_DRIVER ]]
 then
 python2 $SERVER_DIR/scripts/waitConnection.py $SPARKSEE_HOST
 echo "EXECUTING DRIVER WORKLOAD"
-java -cp $DRIVER_DIR/target/jeeves-standalone.jar com.ldbc.driver.Client -wu $DRIVER_N_WARMUP_OPERATIONS -oc $DRIVER_N_OPERATIONS $DRIVER_OPTS $DRIVER_WORKLOAD_OPTS -P $DRIVER_WORKLOAD_FILE -P $DATABASE_SOURCE_DIR/social_network/updateStream.properties &> ${OUTPUT_FILE_BASE_NAME}.driver -p "sparksee.host|$SPARKSEE_HOST"
+echo "java -cp $DRIVER_DIR/target/jeeves-standalone.jar com.ldbc.driver.Client -wu $DRIVER_N_WARMUP_OPERATIONS -oc $DRIVER_N_OPERATIONS $DRIVER_OPTS $DRIVER_WORKLOAD_OPTS -P $DRIVER_WORKLOAD_FILE -P $DATABASE_SOURCE_DIR/social_network/updateStream.properties -p \"sparksee.host|$SPARKSEE_HOST\" &> ${OUTPUT_FILE_BASE_NAME}.driver "
+java -cp $DRIVER_DIR/target/jeeves-standalone.jar com.ldbc.driver.Client -wu $DRIVER_N_WARMUP_OPERATIONS -oc $DRIVER_N_OPERATIONS $DRIVER_OPTS $DRIVER_WORKLOAD_OPTS -P $DRIVER_WORKLOAD_FILE -P $DATABASE_SOURCE_DIR/social_network/updateStream.properties -p "sparksee.host|$SPARKSEE_HOST" &> ${OUTPUT_FILE_BASE_NAME}.driver 
 fi
 
 if [[ -z $NO_DRIVER ]]
 then
-	cp ./results/LDBC-results_log.csv ${OUTPUT_FILE_BASE_NAME}.log
+	mv $RESULTS_PATH/LDBC-results_log.csv ${OUTPUT_FILE_BASE_NAME}.log
 	python2 $SERVER_DIR/scripts/shutdownServer.py $SPARKSEE_HOST
-	mkdir -p ./results/$SCALE_FACTOR/$TAG/
-	mv -f execution* ./results/$SCALE_FACTOR/$TAG/
+	mkdir -p $RESULTS_PATH/$SCALE_FACTOR/$TAG/
+	mv -f ${OUTPUT_FILE_BASE_NAME}.driver $RESULTS_PATH/$SCALE_FACTOR/$TAG/
+	mv -f ${OUTPUT_FILE_BASE_NAME}.log $RESULTS_PATH/$SCALE_FACTOR/$TAG/
+	mv -f ${OUTPUT_FILE_BASE_NAME}.config $RESULTS_PATH/$SCALE_FACTOR/$TAG/
 fi
 
 if [[ -z $NO_SERVER ]]
 then
-	mkdir -p ./results/$SCALE_FACTOR/$TAG/
-  cp sparksee.cfg ./results/$SCALE_FACTOR/$TAG/${OUTPUT_FILE_BASE_NAME}.sparksee.cfg
-  cp sparksee.log ./results/$SCALE_FACTOR/$TAG/${OUTPUT_FILE_BASE_NAME}.sparksee.log
-	mv -f execution* ./results/$SCALE_FACTOR/$TAG/
+	mkdir -p $RESULTS_PATH/$SCALE_FACTOR/$TAG/
+  cp sparksee.cfg $RESULTS_PATH/$SCALE_FACTOR/$TAG/${OUTPUT_FILE_BASE_NAME}.sparksee.cfg
+  mv sparksee.log $RESULTS_PATH/$SCALE_FACTOR/$TAG/${OUTPUT_FILE_BASE_NAME}.sparksee.log
+	mv -f ${OUTPUT_FILE_BASE_NAME}.server $RESULTS_PATH/$SCALE_FACTOR/$TAG/
 fi
 
 exit 0;
