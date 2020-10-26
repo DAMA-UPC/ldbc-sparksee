@@ -5,6 +5,9 @@ set -e
 ROOT=$(pwd)
 
 
+##################
+# HELPER METHODS #
+##################
 
 function get_abs_path {
   echo $(readlink -m $1)
@@ -41,6 +44,7 @@ function print_load_usage {
 	echo "		-np/--numpartitions <the number of partitions that were used to generate the dataset> "
 	echo "		-t/--tag <the tag used to identify this version. Not necessarily the official one, user can chose it> "
 	echo "		-s/--sparksee <path to sparksee library root folder. If not specified, default repository will be used with the provided tag> "
+  echo "    -c|--commit The sparksee commit/tag/branch to use if the sparksee git"
 }
 
 # Prints the usage of run command
@@ -55,6 +59,8 @@ function print_run_usage {
 	echo " -o|--operations the number of operations to run"
 	echo " -wo|--warmupoperations the number of warmup operations to run"
   echo " -s|--sparksee path to the sparksee distribution root foler"
+  echo " -c|--commit The sparksee commit/tag/branch to use if the sparksee git
+  repository was specified"
 	exit
 }
 
@@ -92,9 +98,9 @@ function compile_with_repository {
     mkdir -p build
     pushd build
     cmake $SPARKSEE_CMAKE_FLAGS ..
-    make -j8 sparkseecpp
-    make GDBBackup
-    make GDBRestore
+    make -j${COMPILATION_JOBS} sparkseecpp
+    make -j${COMPILATION_JOBS} GDBBackup
+    make -j${COMPILATION_JOBS} GDBRestore
     popd
     popd
 
@@ -102,7 +108,7 @@ function compile_with_repository {
     mkdir -p $LDBC_ROOT/build
     pushd $LDBC_ROOT/build
     cmake -DSPARKSEE_ROOT=${SPARKSEE_GIT_REPOSITORY} $LDBC_CMAKE_FLAGS ..
-    make -j8
+    make -j${COMPILATION_JOBS}
     popd
   else
     print_error "Sparksee repository is not set. Cannot compile"
@@ -118,7 +124,7 @@ function compile_with_path {
     mkdir -p $LDBC_ROOT/build
     pushd $LDBC_ROOT/build
     cmake -DSPARKSEE_INCLUDES=${SPARKSEE_PATH}/includes/sparksee -DSPARKSEE_LIB_DIR=${SPARKSEE_PATH}/lib/linux64 $LDBC_CMAKE_FLAGS ..
-    make -j8
+    make -j${COMPILATION_JOBS}
     popd
   else
     print_error "Sparksee path is not set. Cannot compile"
@@ -223,9 +229,13 @@ function configure_repositories {
   fi
   echo "LDBC_RESULTS_REPOSITORY=$LDBC_RESULTS_REPOSITORY" >> ldbc.cfg
 
+
+
   LDBC_ROOT=$(dirname $0)
   LDBC_ROOT=$(get_abs_path "$LDBC_ROOT/../")
   echo "LDBC_ROOT=$LDBC_ROOT" >> ldbc.cfg
+
+  echo "COMPILATION_JOBS=8" >> ldbc.cfg
 }
 
 # uninstalls the benchmark
@@ -243,7 +253,9 @@ function initialize_repository {
 }
 
 
-# SCRIPT STARTS HERE
+######################
+# SCRIPT STARTS HERE #
+######################
 
 if [[ $1 != install  &&  $1 != run && $1 != uninstall && $1 != load && $1 != synch && $1 != validate && $1 != patch ]]
 then
@@ -281,8 +293,8 @@ then
     configure_repositories
     install_ldbc_snb_driver
     install_sparksee
-    echo "LDBC_CMAKE_FLAGS=" >> ldbc.cfg
-    echo "SPARKSEE_CMAKE_FLAGS=" >> ldbc.cfg
+    echo "LDBC_CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=RELEASE" >> ldbc.cfg
+    echo "SPARKSEE_CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=RELEASE" >> ldbc.fg
     touch ldbc.success
     echo "INSTALLATION FINISHED"
     cat ldbc.cfg
@@ -314,6 +326,10 @@ then
         SPARKSEE_PATH="$2"
         shift # past argument
         ;;
+      -c|--commit)
+        SPARKSEE_COMMIT="$2"
+        shift # past argument
+        ;;
       *)
       NON_CONSUMED="$NON_CONSUMED $key"
       ;;
@@ -340,13 +356,26 @@ then
     exit
   fi
 
+  if [[ -z $SPARKSEE_PATH ]]
+  then
+    if [[ -z $SPARKSEE_GIT_REPOSITORY ]]
+    then
+      print_error "Neither SPARKSEE git repository not SPARKSEE library path have been provided"
+      exit
+    elif [[ -z $SPARKSEE_COMMIT ]]
+    then
+      print_error "--commit option is missing"
+      exit
+    fi
+  fi
+
   if test ! -f $LDBC_IMAGES_REPOSITORY/$SCALEFACTOR/$TAG/snb.gdb
   then
 		print_error "The required image $LDBC_IMAGES_REPOSITORY/$SCALEFACTOR/$TAG/snb.gdb does not exist. Load it first with ldbc_snb.sh load command"
     exit
   fi
 
-  compile $TAG $SPARKSEE_PATH
+  compile $SPARKSEE_COMMIT $SPARKSEE_PATH
 
 	if [[ ! -z $LDBC_ROOT && -f $LDBC_ROOT/build/server ]]
 	then
@@ -370,6 +399,10 @@ fi
 if [[ $1 == load ]]
 then
   check_installed 
+
+  ## DEFAULT OPTIONS
+  NUMTHREADS=1
+  NUMPARTITIONS=1
 
 while [[ $# > 0 ]]
 do
@@ -398,6 +431,10 @@ do
 			SPARKSEE_PATH="$2"
 			shift # past argument
 			;;
+		-c|--commit)
+			SPARKSEE_COMMIT="$2"
+			shift # past argument
+			;;
 	esac
 	shift
 done
@@ -413,6 +450,19 @@ if [[ -z $TAG ]]
 then
 	print_error "--tag option is missing"
 	exit
+fi
+
+if [[ -z $SPARKSEE_PATH ]]
+then
+  if [[ -z $SPARKSEE_GIT_REPOSITORY ]]
+  then
+    print_error "Neither SPARKSEE git repository not SPARKSEE library path have been provided"
+    exit
+  elif [[ -z $SPARKSEE_COMMIT ]]
+  then
+    print_error "--commit option is missing"
+    exit
+  fi
 fi
 
 
@@ -446,7 +496,7 @@ then
 	exit
 fi
 
-compile $TAG $SPARKSEE_PATH
+compile $SPARKSEE_COMMIT $SPARKSEE_PATH
 
 initialize_repository $LDBC_IMAGES_REPOSITORY/$SCALEFACTOR/$TAG $LDBC_DATASETS_REPOSITORY/$SCALEFACTOR
 
