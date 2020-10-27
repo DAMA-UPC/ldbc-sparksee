@@ -294,7 +294,7 @@ then
     install_ldbc_snb_driver
     install_sparksee
     echo "LDBC_CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=RELEASE" >> ldbc.cfg
-    echo "SPARKSEE_CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=RELEASE" >> ldbc.fg
+    echo "SPARKSEE_CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=RELEASE" >> ldbc.cfg
     touch ldbc.success
     echo "INSTALLATION FINISHED"
     cat ldbc.cfg
